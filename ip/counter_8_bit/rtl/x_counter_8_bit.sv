@@ -8,10 +8,10 @@ module x_counter_8_bit(
    output   logic       o_count_3,
    output   logic       o_count_2,
    output   logic       o_count_1,
-   output   logic       o_count_0,
+   output   logic       o_count_0
 ); 
-   logic [7:0] count_q;
-   logic [7:0] count_d;
+   logic [15:0] count_q;
+   logic [15:0] count_d;
 
    assign count_d = (count_q + 'd1);
 

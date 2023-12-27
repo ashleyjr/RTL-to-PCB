@@ -2,6 +2,8 @@
 
 yosys \
    -p "read -sv rtl/x_counter_8_bit.sv" \
-   -p "synth -top x_counter_8_bit"\ 
+   -p "synth -top x_counter_8_bit"\
    -p "abc -g NOR"\
    -p "write_table x_counter_8_bit.txt" 
+
+python3 ../../tools/python/check_cells.py --filename x_counter_8_bit.txt --top x_counter_8_bit --netlist
