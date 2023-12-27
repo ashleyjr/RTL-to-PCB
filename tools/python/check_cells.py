@@ -69,13 +69,13 @@ def main():
             netlist[f"D{s[1]}"].append({s[3] : s[5]})
     print("OK")
 
-    print("Rename Cells...")
+    print("Rename Cells...", end='')
     cells = {}
     for i,n in enumerate(netlist):
         cells[f"{n[0]}{i}"] = netlist[n]
     print("OK")
 
-    print("Collecting All Nets...")
+    print("Collecting All Nets...",end='')
     all_nets = []
     for n in cells:
         for s in cells[n]:
@@ -85,7 +85,7 @@ def main():
                     all_nets.append(net)
     print("OK")
 
-    print("Renaming All Nets...")
+    print("Renaming All Nets...",end='')
     for n in cells:
         for s in cells[n]:
             for p in s:
@@ -95,7 +95,7 @@ def main():
     print("OK")
 
 
-    print("Cell Count...")
+    print("Cell Count:")
     for t in ["P", "N", "D"]:
         i = 0
         for n in cells:
@@ -104,7 +104,7 @@ def main():
         print(f"\t{i} {t}(s)")
 
     if args.netlist:
-        print("Print Netlist")
+        print("Print Netlist:")
         for n in cells:
             print(n, end='')
             for p in cells[n]:
