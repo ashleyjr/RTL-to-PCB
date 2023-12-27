@@ -1,0 +1,7 @@
+#!/bin/bash
+
+yosys \
+   -p "read -sv rtl/x_counter_8_bit.sv" \
+   -p "synth -top x_counter_8_bit"\ 
+   -p "abc -g NOR"\
+   -p "write_table x_counter_8_bit.txt" 
