@@ -1,0 +1,12 @@
+#!/bin/bash
+
+rm -f $1.txt
+rm -f $1.log
+
+yosys \
+   -p "read -sv ip/$1/rtl/x_$1.sv" \
+   -p "synth -top x_$1"\
+   -p "abc -g NOR"\
+   -p "write_table $1.txt" > $1.log
+
+python3 tools/python/check_cells.py --filename $1.txt --top x_$1 

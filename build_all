@@ -1,0 +1,4 @@
+#!/bin/bash
+
+./build counter_8_bit
+./build counter_16_bit
