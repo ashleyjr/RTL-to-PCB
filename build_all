@@ -2,3 +2,5 @@
 
 ./build counter_8_bit
 ./build counter_16_bit
+./build counter_32_bit
+./build shift_32_bit

@@ -9,4 +9,4 @@ yosys \
    -p "abc -g NOR"\
    -p "write_table $1.txt" > $1.log
 
-python3 tools/python/check_cells.py --filename $1.txt --top x_$1 
+python3 tools/python/check_cells.py --filename $1.txt --top x_$1 --netlist 
