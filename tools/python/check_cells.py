@@ -1,9 +1,9 @@
 import argparse
 
 PAD="-"
-NOT="$_NOT_"
-NOR="$_NOR_"
-DFF="$_DFF_PN0_"
+NOT="NOT"
+NOR="NOR"
+DFF="DFF"
 
 def main():
     parser = argparse.ArgumentParser()

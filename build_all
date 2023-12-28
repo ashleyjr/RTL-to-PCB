@@ -1,6 +1,20 @@
 #!/bin/bash
 
-./build counter_8_bit
-./build counter_16_bit
-./build counter_32_bit
-./build shift_32_bit
+MODULES="\
+   counter_8_bit\
+   counter_16_bit\
+   counter_32_bit\
+   shift_32_bit\
+   lut_4_bit\
+"
+
+for m in $MODULES
+do
+   yosys \
+      -p "read -sv ip/$m/rtl/x_$m.sv" \
+      -p "synth -top x_$m"\
+      -p "dfflibmap -liberty lib/cells.lib"\
+      -p "abc -liberty lib/cells.lib"\
+      -p "write_table $m.txt" > $m.log
+   python3 tools/python/check_cells.py --filename $m.txt --top x_$m --quiet
+done

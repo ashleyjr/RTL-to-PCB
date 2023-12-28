@@ -15,7 +15,7 @@ module x_counter_8_bit(
 
    assign count_d = (count_q + 'd1);
 
-   always_ff@(posedge i_clk or negedge i_rst_n) begin 
+   always_ff@(posedge i_clk) begin 
       if(!i_rst_n)   count_q <= 'd0;
       else           count_q <= count_d;
    end 

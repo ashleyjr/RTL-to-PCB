@@ -9,7 +9,7 @@ module x_shift_32_bit(
 
    assign shift_d = {shift_q[30:0],i_in};
 
-   always_ff@(posedge i_clk or negedge i_rst_n) begin 
+   always_ff@(posedge i_clk) begin 
       if(!i_rst_n)   shift_q <= 'd0;
       else           shift_q <= shift_d;
    end 
