@@ -26,7 +26,7 @@ def main():
     if not args.quiet:
         print(f"\t\t\t\t{args.filename}")
     else:
-        print(f"{args.filename}:\t", end='')
+        print(f"{args.filename}:")
 
 
     if not args.quiet:
@@ -115,12 +115,12 @@ def main():
 
     if not args.quiet:
         print("Cell Count:\t\t",end='')
-    for t in ["P", "N", "D"]:
-        i = 0
+    cnt = {"P": 0, "N": 0, "D": 0}
+    for t in cnt:
         for n in cells:
             if t == n[0]:
-                i += 1
-        print(f"\t{i} {t}(s)",end='')
+                cnt[t] += 1
+    print(f"{cnt['P']:30} P(s) {cnt['N']:5} N(s) {cnt['D']:5} D(s)")
     if not args.quiet:
         print("")
 
