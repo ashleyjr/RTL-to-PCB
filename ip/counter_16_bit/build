@@ -1,9 +1,0 @@
-#!/bin/bash
-
-yosys \
-   -p "read -sv rtl/x_counter_16_bit.sv" \
-   -p "synth -top x_counter_16_bit"\
-   -p "abc -g NOR"\
-   -p "write_table x_counter_16_bit.txt" 
-
-python3 ../../tools/python/check_cells.py --filename x_counter_16_bit.txt --top x_counter_16_bit --netlist
