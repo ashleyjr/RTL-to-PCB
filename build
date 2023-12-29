@@ -10,4 +10,4 @@ yosys \
    -p "abc -liberty lib/cells.lib"\
    -p "write_table $1.txt" > $1.log
 
-python3 tools/python/check_cells.py --filename $1.txt --top x_$1 --netlist 
+python3 tools/python/check_cells.py --filename $1.txt --top x_$1 --quiet

@@ -23,10 +23,10 @@ def main():
 
     netlist = {}
 
-    if not args.quiet:
-        print(f"\t\t\t\t{args.filename}")
-    else:
-        print(f"{args.filename}:")
+    #if not args.quiet:
+    #    print(f"\t\t\t\t{args.filename}")
+    #else:
+    #    print(f"{args.filename}:")
 
 
     if not args.quiet:
@@ -120,7 +120,7 @@ def main():
         for n in cells:
             if t == n[0]:
                 cnt[t] += 1
-    print(f"{cnt['P']:30} P(s) {cnt['N']:5} N(s) {cnt['D']:5} D(s)")
+    #print(f"{cnt['P']:30} P(s) {cnt['N']:5} N(s) {cnt['D']:5} D(s)")
     if not args.quiet:
         print("")
 
@@ -131,7 +131,84 @@ def main():
             for p in cells[n]:
                 print(f"\t{p}", end='')
             print("")
-    print("")
+
+    print('(export (version "E")')
+
+    print('\t(components')
+    for n in cells:
+        print(f'\t\t(comp (ref "{n}")')
+        if n[0] == "D":
+            print('\t\t\t(value "SN74LVC1G00DCKR")')
+            print('\t\t\t(footprint "cells:SN74LVC1G00DCKR")')
+            print('\t\t\t(libsource (lib "cells") (part "SN74LVC1G00DCKR") (description ""))')
+        if n[0] == "N":
+            print('\t\t\t(value "SN74LVC1G79DCKR")')
+            print('\t\t\t(footprint "cells:SN74LVC1G00DCKR")')
+            print('\t\t\t(libsource (lib "cells") (part "SN74LVC1G00DCKR") (description ""))')
+        if n[0] == "P":
+            print('\t\t\t(value "PAD")')
+            print('\t\t\t(footprint "cells:PAD")')
+            print('\t\t\t(libsource (lib "cells") (part "PAD") (description ""))')
+
+        print('\t\t)')
+    print('\t)')
+
+    # Add Library
+    print('\t(libraries')
+    print('\t\t(library (logical "cells")')
+    print('\t\t(uri "/Users/ashleyr/RTL-to-PCB/investigation/2023_12_19_nands_and_flops/nands_and_flops/cells.kicad_sym"))')
+    print('\t)')
+
+    # Add Net
+    print('\t(nets')
+    for i in range(len(all_nets)):
+        print(f'\t\t(net (code "{i+1}") (name "net{i}")')
+        for cell in cells:
+            for pins in cells[cell]:
+                for pin in pins:
+                    if pins[pin] == i:
+                        if cell[0] == "P":
+                            if pin == "A":
+                                num = "1"
+                                io = "output"
+
+                        if cell[0] == "D":
+                            if pin == "Q":
+                                num = "4"
+                                io = "output"
+                            if pin == "D":
+                                num = "1"
+                                io = "input"
+                            if pin == "C":
+                                num = "2"
+                                io = "input"
+                        if cell[0] == "N":
+                            if pin == "A":
+                                num = "1"
+                                io = "input"
+                            if pin == "B":
+                                num = "2"
+                                io = "input"
+                            if pin == "Y":
+                                num = "4"
+                                io = "output"
+                        print(f'\t\t\t(node (ref "{cell}") (pin "{num}") (pinfunction "{pin}") (pintype "{io}"))')
+        print("\t\t)")
+
+    print(f'\t\t(net (code "{len(all_nets)+1}") (name "GND")')
+    for cell in cells:
+        if cell[0] != "P":
+            print(f'\t\t\t(node (ref "{cell}") (pin "3") (pintype "power_in"))')
+    print("\t\t)")
+
+    print(f'\t\t(net (code "{len(all_nets)+2}") (name "VCC")')
+    for cell in cells:
+        if cell[0] != "P":
+            print(f'\t\t\t(node (ref "{cell}") (pin "5") (pintype "power_in"))')
+    print("\t\t)")
+
+    print('\t)')
+    print(')')
 
 if "__main__" == __name__:
     main()
