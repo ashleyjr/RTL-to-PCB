@@ -1,4 +1,5 @@
 import argparse
+import pickle
 
 PAD="-"
 NOT="NOT"
@@ -209,6 +210,10 @@ def main():
 
     print('\t)')
     print(')')
+
+    with open('test.pkl', 'wb') as f:
+        pickle.dump(cells, f)
+
 
 if "__main__" == __name__:
     main()
