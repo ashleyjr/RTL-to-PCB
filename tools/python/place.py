@@ -8,35 +8,35 @@ def distance(cells,pos):
     for cell_a in cells:
         for cell_b in cells:
             if (cell_a[0] == "N") and (cell_b[0] == "N"):
-                if (cells[cell_a][2]['Y'] == cells[cell_b][0]['A']):
+                if (cells[cell_a]['Y'] == cells[cell_b]['A']):
                     x = abs(pos[cell_a]['x'] - pos[cell_b]['x'])
                     y = abs(pos[cell_a]['y'] - pos[cell_b]['y'])
                     d += math.sqrt((x * x) + (y * y))
                     break
-                if (cells[cell_a][2]['Y'] == cells[cell_b][1]['B']):
+                if (cells[cell_a]['Y'] == cells[cell_b]['B']):
                     x = abs(pos[cell_a]['x'] - pos[cell_b]['x'])
                     y = abs(pos[cell_a]['y'] - pos[cell_b]['y'])
                     d += math.sqrt((x * x) + (y * y))
 
             if (cell_a[0] == "D") and (cell_b[0] == "N"):
-                if (cells[cell_a][2]['Q'] == cells[cell_b][0]['A']):
+                if (cells[cell_a]['Q'] == cells[cell_b]['A']):
                     x = abs(pos[cell_a]['x'] - pos[cell_b]['x'])
                     y = abs(pos[cell_a]['y'] - pos[cell_b]['y'])
                     d += math.sqrt((x * x) + (y * y))
                     break
-                if (cells[cell_a][2]['Q'] == cells[cell_b][1]['B']):
+                if (cells[cell_a]['Q'] == cells[cell_b]['B']):
                     x = abs(pos[cell_a]['x'] - pos[cell_b]['x'])
                     y = abs(pos[cell_a]['y'] - pos[cell_b]['y'])
                     d += math.sqrt((x * x) + (y * y))
 
             if (cell_a[0] == "N") and (cell_b[0] == "D"):
-                if (cells[cell_a][2]['Y'] == cells[cell_b][1]['D']):
+                if (cells[cell_a]['Y'] == cells[cell_b]['D']):
                     x = abs(pos[cell_a]['x'] - pos[cell_b]['x'])
                     y = abs(pos[cell_a]['y'] - pos[cell_b]['y'])
                     d += math.sqrt((x * x) + (y * y))
 
             if (cell_a[0] == "D") and (cell_b[0] == "D"):
-                if (cells[cell_a][2]['Q'] == cells[cell_b][1]['D']):
+                if (cells[cell_a]['Q'] == cells[cell_b]['D']):
                     x = abs(pos[cell_a]['x'] - pos[cell_b]['x'])
                     y = abs(pos[cell_a]['y'] - pos[cell_b]['y'])
                     d += math.sqrt((x * x) + (y * y))

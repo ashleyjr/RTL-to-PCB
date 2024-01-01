@@ -61,25 +61,25 @@ def main():
         if s[2] == PAD:
             assert s[1] not in netlist
             if f"P{s[1]}" not in netlist:
-                netlist[f"P{s[1]}"] = []
-            netlist[f"P{s[1]}"].append({"A" : s[5]})
+                netlist[f"P{s[1]}"] = {}
+            netlist[f"P{s[1]}"]["A"] = s[5]
 
         if s[2] == NOT:
             if f"N{s[1]}" not in netlist:
-                netlist[f"N{s[1]}"] = []
-            netlist[f"N{s[1]}"].append({s[3] : s[5]})
+                netlist[f"N{s[1]}"] = {}
+            netlist[f"N{s[1]}"][s[3]] = s[5]
             if s[3] == "A":
-                netlist[f"N{s[1]}"].append({"B" : s[5]})
+                netlist[f"N{s[1]}"]["B"] = s[5]
 
         if s[2] == NOR:
             if f"N{s[1]}" not in netlist:
-                netlist[f"N{s[1]}"] = []
-            netlist[f"N{s[1]}"].append({s[3] : s[5]})
+                netlist[f"N{s[1]}"] = {}
+            netlist[f"N{s[1]}"][s[3]] = s[5]
 
         if s[2] == DFF:
             if f"D{s[1]}" not in netlist:
-                netlist[f"D{s[1]}"] = []
-            netlist[f"D{s[1]}"].append({s[3] : s[5]})
+                netlist[f"D{s[1]}"] = {}
+            netlist[f"D{s[1]}"][s[3]] = s[5]
     if not args.quiet:
         print("OK")
 
@@ -96,10 +96,9 @@ def main():
     all_nets = []
     for n in cells:
         for s in cells[n]:
-            for p in s:
-                net = s[p]
-                if net not in all_nets:
-                    all_nets.append(net)
+            net = cells[n][s]
+            if net not in all_nets:
+                all_nets.append(net)
     if not args.quiet:
         print("OK")
 
@@ -107,10 +106,9 @@ def main():
         print("Renaming All Nets...",end='')
     for n in cells:
         for s in cells[n]:
-            for p in s:
-                for i,net in enumerate(all_nets):
-                    if s[p] == net:
-                        s[p] = i
+            for i,net in enumerate(all_nets):
+                if cells[n][s] == net:
+                    cells[n][s] = i
     if not args.quiet:
         print("OK")
 
@@ -165,35 +163,33 @@ def main():
     for i in range(len(all_nets)):
         print(f'\t\t(net (code "{i+1}") (name "net{i}")')
         for cell in cells:
-            for pins in cells[cell]:
-                for pin in pins:
-                    if pins[pin] == i:
-                        if cell[0] == "P":
-                            if pin == "A":
-                                num = "1"
-                                io = "output"
-
-                        if cell[0] == "D":
-                            if pin == "Q":
-                                num = "4"
-                                io = "output"
-                            if pin == "D":
-                                num = "1"
-                                io = "input"
-                            if pin == "C":
-                                num = "2"
-                                io = "input"
-                        if cell[0] == "N":
-                            if pin == "A":
-                                num = "1"
-                                io = "input"
-                            if pin == "B":
-                                num = "2"
-                                io = "input"
-                            if pin == "Y":
-                                num = "4"
-                                io = "output"
-                        print(f'\t\t\t(node (ref "{cell}") (pin "{num}") (pinfunction "{pin}") (pintype "{io}"))')
+            for pin in cells[cell]:
+                if cells[cell][pin] == i:
+                    if cell[0] == "P":
+                        if pin == "A":
+                            num = "1"
+                            io = "output"
+                    if cell[0] == "D":
+                        if pin == "Q":
+                            num = "4"
+                            io = "output"
+                        if pin == "D":
+                            num = "1"
+                            io = "input"
+                        if pin == "C":
+                            num = "2"
+                            io = "input"
+                    if cell[0] == "N":
+                        if pin == "A":
+                            num = "1"
+                            io = "input"
+                        if pin == "B":
+                            num = "2"
+                            io = "input"
+                        if pin == "Y":
+                            num = "4"
+                            io = "output"
+                    print(f'\t\t\t(node (ref "{cell}") (pin "{num}") (pinfunction "{pin}") (pintype "{io}"))')
         print("\t\t)")
 
     print(f'\t\t(net (code "{len(all_nets)+1}") (name "GND")')
