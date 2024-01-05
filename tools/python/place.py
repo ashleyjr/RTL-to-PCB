@@ -118,7 +118,7 @@ with open('test.pkl', 'rb') as f:
     cells = pickle.load(f)
 
 # Square grid
-sqr = math.ceil(math.sqrt(len(cells))) + 1
+sqr = math.ceil(math.sqrt(len(cells)))
 print(sqr)
 
 # Find all nets
@@ -222,5 +222,80 @@ for p0 in pos:
 
 with open('place.pkl', 'wb') as f:
     pickle.dump(final, f)
+
+
+
+## Net routing
+#vias = []
+#for i in range(sqr * 3):
+#    c = []
+#    for j in range (sqr):
+#        c.append(random.choice(list(ass)))
+#    vias.append(c)
+#    print(c)
+
+# Create fanout dict for each net
+fanouts = {}
+for n in all_nets:
+    sinks = {}
+    src = None
+    for cell in cells:
+        for pin in cells[cell]:
+            if cells[cell][pin] == n:
+                if pin in ["Q","Y"]:
+                    src = cell
+                else:
+                    sinks[cell] = pin
+    if src == None:
+        for s in sinks:
+            if s[0] == "P":
+                src = s
+        sinks.pop(src, None)
+    fanouts[src] = sinks
+
+for f in fanouts:
+    print(f"{f}:{fanouts[f]}")
+
+with open('vias.pkl', 'wb') as f:
+    pickle.dump(fanouts, f)
+
+
+
+
+
+
+G = 10
+front = [[False for x in range(sqr*G)] for y in range(sqr*G)]
+front_keepout = [[False for x in range(sqr*G)] for y in range(sqr*G)]
+bottom = [[False for x in range(sqr*G)] for y in range(sqr*G)]
+bottom_keepout = [[False for x in range(sqr*G)] for y in range(sqr*G)]
+vias = [[False for x in range(sqr*G)] for y in range(sqr*G)]
+starts = [[None for x in range(sqr*G)] for y in range(sqr*G)]
+ends = [[False for x in range(sqr*G)] for y in range(sqr*G)]
+
+for f in fanouts:
+    if f[0] == "P":
+        net = cells[f]['A']
+    if f[0] == "N":
+        net = cells[f]['Y']
+    starts[pos[f]['x']*G][pos[f]['y']*G] = net
+
+for ff in fanouts:
+    for f in ff:
+        ends[pos[f]['x']*G][pos[f]['y']*G] = cells[f][ff[f]]
+
+
+
+
+for ss in starts:
+    for s in ss:
+        if s != None:
+            print(f"{s}",end='')
+        else:
+            print(' ',end='')
+    print()
+
+
+
 
 
