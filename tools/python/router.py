@@ -238,9 +238,12 @@ class Pcb:
         self.vias = Grid(size)
         self.fanouts = fanouts
         self.nets = []
+        self.addStartEnds()
         for sx,sy in fanouts:
             for ex,ey in fanouts[(sx,sy)]:
                 self.nets.append((sx,sy,ex,ey))
+        self.addStartEnds()
+        print(self.nets)
 
     def distance(self,x0,y0,x1,y1):
         x = abs(x0 - x1)
@@ -249,33 +252,45 @@ class Pcb:
         return math.sqrt(d)
 
     def search(self):
-        for n in self.nets:
+        for n_i,n in enumerate(self.nets):
+
             top_n_bottom = True
             sx,sy,ex,ey = n
             x = sx
             y = sy
+            avoids = []
             self.top.add(x,y)
             while ((x,y) != (ex,ey)) or not top_n_bottom:
+                #pcb.print()
+                print(f"{x},{y},{ex},{ey}{top_n_bottom},{avoids}")
                 # Find possible next steps
                 tpos = []
                 bpos = []
                 if top_n_bottom:
-                    if not self.bottom.isKeepOut(x,y) and not self.vias.isKeepOut(x,y):
+                    if  not self.bottom.isKeepOut(x,y) and \
+                        not self.vias.isKeepOut(x,y) and \
+                        not (x,y) in avoids:
                         bpos.append((x,y))
                     if x != 0:
-                        if not self.top.isKeepOut(x-1,y):
+                        if  not self.top.isKeepOut(x-1,y) and \
+                            not (x-1,y) in avoids:
                             tpos.append((x-1,y))
                     if x != (self.size-1):
-                        if not self.top.isKeepOut(x+1,y):
+                        if  not self.top.isKeepOut(x+1,y) and \
+                            not (x+1,y) in avoids:
                             tpos.append((x+1,y))
                 else:
-                    if not self.top.isKeepOut(x,y) and not self.vias.isKeepOut(x,y):
+                    if  not self.top.isKeepOut(x,y) and \
+                        not self.vias.isKeepOut(x,y) and \
+                        not (x,y) in avoids:
                         tpos.append((x,y))
                     if y != 0:
-                        if not self.bottom.isKeepOut(x,y-1):
+                        if  not self.bottom.isKeepOut(x,y-1) and \
+                            not (x,y-1) in avoids:
                             bpos.append((x,y-1))
                     if y != (self.size-1):
-                        if not self.bottom.isKeepOut(x,y+1):
+                        if  not self.bottom.isKeepOut(x,y+1) and \
+                            not (x,y+1) in avoids:
                             bpos.append((x,y+1))
                 # Nowhere to go
                 assert (len(bpos) + len(tpos)) > 0
@@ -288,9 +303,19 @@ class Pcb:
                     bdis.append(self.distance(bx,by,ex,ey))
                 # Try shortest distance
                 while True:
+                    # Check there is stuff
+                    if len(tdis) > 0:
+                        tmin = min(tdis)
+                    else:
+                        tmin = math.inf
+                    if len(bdis) > 0:
+                        bmin = min(bdis)
+                    else:
+                        bmin = math.inf
+
 
                     # Make the shortest distance
-                    if min(tdis) < min(bdis):
+                    if tmin < bmin:
                         i = tdis.index(min(tdis))
                         x,y = tpos[i]
                         self.top.add(x,y)
@@ -304,6 +329,8 @@ class Pcb:
                             self.vias.remove(x,y)
                         del tpos[i]
                         del tdis[i]
+                        # Avoids this in the future
+                        avoids.append((x,y))
                     else:
                         i = bdis.index(min(bdis))
                         x,y = bpos[i]
@@ -318,13 +345,13 @@ class Pcb:
                             self.vias.remove(x,y)
                         del bpos[i]
                         del bdis[i]
+                        # Avoids this in the future
+                        avoids.append((x,y))
+
+            pcb.print()
+            print(f"\r{n_i+1}/{len(self.nets)}")
 
     def addStartEnds(self):
-        # Create net for ech point-to-point
-        self.nets = []
-        for sx,sy in fanouts:
-            for ex,ey in fanouts[(sx,sy)]:
-                self.nets.append((sx,sy,ex,ey))
         # Initialise the top copper with all the start/end points
         for sx,sy,ex,ey in self.nets:
             self.top.add(sx,sy)
@@ -504,6 +531,7 @@ class Pcb:
 
     def numConnected(self):
         num = 0
+        print(self.nets)
         for sx,sy,ex,ey in self.nets:
             if self.isConnected(sx,sy,ex,ey):
                 num += 1
@@ -527,6 +555,10 @@ class Pcb:
                 if (sx,sy) != (ex,ey):
                     if (ex,ey,sx,sy) not in checks:
                         checks.append((sx,sy,ex,ey))
+                    for x,y in self.fanouts[(ex,ey)]:
+                        if (ex,ey,sx,sy) not in checks:
+                            checks.append((sx,sy,x,y))
+
         for sx,sy,ex,ey in checks:
             if self.isConnected(sx,sy,ex,ey):
                 l.append((sx,sy,ex,ey))
@@ -737,15 +769,15 @@ class Pcb:
 
 
 fanouts = {
-    (1,1) : [(19,19),(17,17),(5,0)],
+    (1,1) : [(19,19),(17,17)],
     (2,2) : [(18,18)],
-    (2,4) : [(2,10)],
-    #(5,1) : [(5,10)]
-    #(10,0): [(10,1)]
+    (2,4) : [(3,10)],
+    (5,1) : [(1,10)],
+    #(10,0): [(10,1)],
     #(19,1) : [(19,8)],
     #(10,10) : [(5,5)],
     (4,4): [(8,8)],
-    (8,5): [(5,8)],
+    #(8,5): [(5,8)],
 }
 
 
