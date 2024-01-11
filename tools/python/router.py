@@ -289,7 +289,7 @@ class Pcb:
                         avoids.append((x,y))
 
             os.system('clear')
-            pcb.print()
+            self.print()
 
     def addStartEnds(self):
         # Initialise the top copper with all the start/end points
@@ -454,40 +454,40 @@ class Pcb:
                 print(" ",end='')
             print("")
 
-fanouts = {
-    (1,1) : [(19,19),(17,17)],
-    (2,2) : [(18,18)],
-    (2,4) : [(3,10)],
-    (5,1) : [(1,10)],
-    (10,0): [(10,1)],
-    (19,1) : [(19,8)],
-    (10,10) : [(5,5)],
-    (4,4): [(8,8)],
-    (8,5): [(5,8)],
-}
-
-
-print("")
-size = 20
-pcb = Pcb(size, fanouts)
-pcb.search()
-
-cs = pcb.listConnected()
-ns = pcb.listNets()
-xs = pcb.numCrossConnected()
-
-print(f"Routed: {len(cs)}/{len(ns)}")
-print(f"Cross connected: {xs}")
-
-pcb.cleanUp()
-pcb.print()
-
-cs = pcb.listConnected()
-ns = pcb.listNets()
-xs = pcb.numCrossConnected()
-
-print(f"Routed: {len(cs)}/{len(ns)}")
-print(f"Cross connected: {xs}")
+#fanouts = {
+#    (1,1) : [(19,19),(17,17)],
+#    (2,2) : [(18,18)],
+#    (2,4) : [(3,10)],
+#    (5,1) : [(1,10)],
+#    (10,0): [(10,1)],
+#    (19,1) : [(19,8)],
+#    (10,10) : [(5,5)],
+#    (4,4): [(8,8)],
+#    (8,5): [(5,8)],
+#}
+#
+#
+#print("")
+#size = 20
+#pcb = Pcb(size, fanouts)
+#pcb.search()
+#
+#cs = pcb.listConnected()
+#ns = pcb.listNets()
+#xs = pcb.numCrossConnected()
+#
+#print(f"Routed: {len(cs)}/{len(ns)}")
+#print(f"Cross connected: {xs}")
+#
+#pcb.cleanUp()
+#pcb.print()
+#
+#cs = pcb.listConnected()
+#ns = pcb.listNets()
+#xs = pcb.numCrossConnected()
+#
+#print(f"Routed: {len(cs)}/{len(ns)}")
+#print(f"Cross connected: {xs}")
 
 
 

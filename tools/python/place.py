@@ -2,6 +2,7 @@ import pickle
 import math
 import random
 import sys
+from router import Pcb
 
 def distance(ass,pos):
     d = 0
@@ -212,7 +213,7 @@ final = {}
 for p in pos:
     if "empty" not in p:
         final[p] = pos[p]
-        print(f"{p}:{final[p]}")
+        print(final[p])
 
 
 for p0 in pos:
@@ -222,17 +223,6 @@ for p0 in pos:
 
 with open('place.pkl', 'wb') as f:
     pickle.dump(final, f)
-
-
-
-## Net routing
-#vias = []
-#for i in range(sqr * 3):
-#    c = []
-#    for j in range (sqr):
-#        c.append(random.choice(list(ass)))
-#    vias.append(c)
-#    print(c)
 
 # Create fanout dict for each net
 fanouts = {}
@@ -261,41 +251,55 @@ with open('vias.pkl', 'wb') as f:
 
 
 
+def scale(x,y,d,p):
+    sx = x * 5
+    sy = y * 5
+    if d[0] == "N":
+        if p == "Y":
+            sx += 4
+            sy += 4
+        if p == "A":
+            sx += 1
+        if p == "B":
+            sy += 8
+    return sx,sy
 
-
-
-G = 10
-front = [[False for x in range(sqr*G)] for y in range(sqr*G)]
-front_keepout = [[False for x in range(sqr*G)] for y in range(sqr*G)]
-bottom = [[False for x in range(sqr*G)] for y in range(sqr*G)]
-bottom_keepout = [[False for x in range(sqr*G)] for y in range(sqr*G)]
-vias = [[False for x in range(sqr*G)] for y in range(sqr*G)]
-starts = [[None for x in range(sqr*G)] for y in range(sqr*G)]
-ends = [[False for x in range(sqr*G)] for y in range(sqr*G)]
-
+pcb_fanouts = {}
 for f in fanouts:
-    if f[0] == "P":
-        net = cells[f]['A']
-    if f[0] == "N":
-        net = cells[f]['Y']
-    starts[pos[f]['x']*G][pos[f]['y']*G] = net
+    x = pos[f]['x']
+    y = pos[f]['y']
+    sx,sy = scale(x,y,f,"Y")
+    pcb_fanouts[(sx,sy)] = []
 
-for ff in fanouts:
-    for f in ff:
-        ends[pos[f]['x']*G][pos[f]['y']*G] = cells[f][ff[f]]
-
-
-
-
-for ss in starts:
-    for s in ss:
-        if s != None:
-            print(f"{s}",end='')
-        else:
-            print(' ',end='')
-    print()
+    for s in fanouts[f]:
+        x = pos[f]['x']
+        y = pos[f]['y']
+        ssx,ssy = scale(x,y,s,fanouts[f][s])
+        pcb_fanouts[(sx,sy)].append((ssx,ssy))
 
 
+print(pcb_fanouts)
+
+size = 30
+pcb = Pcb(size, pcb_fanouts)
+pcb.search()
+
+cs = pcb.listConnected()
+ns = pcb.listNets()
+xs = pcb.numCrossConnected()
+
+print(f"Routed: {len(cs)}/{len(ns)}")
+print(f"Cross connected: {xs}")
+
+pcb.cleanUp()
+pcb.print()
+
+cs = pcb.listConnected()
+ns = pcb.listNets()
+xs = pcb.numCrossConnected()
+
+print(f"Routed: {len(cs)}/{len(ns)}")
+print(f"Cross connected: {xs}")
 
 
 
