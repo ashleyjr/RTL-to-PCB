@@ -52,41 +52,6 @@ class Copper(Grid):
     def isConnected(self, x0, y0, x1, y1):
         return (self.lenConnected(x0,y0,x1,y1) > 0)
 
-    def path(self, x0, y0, x1, y1):
-        assert self.isConnected(x0, y0, x1, y1)
-        p = []
-        # Rotate if required
-        if self.vert_n_horz:
-            a0 = x0
-            a1 = x1
-            b0 = y0
-            b1 = y1
-        else:
-            a0 = y0
-            a1 = y1
-            b0 = x0
-            b1 = x1
-        # Return if not on same line
-        if a0 != a1:
-            return 0
-        # Find the lower one to start
-        if b0 < b1:
-            s = b0
-            e = b1
-        else:
-            s = b1
-            e = b0
-        # Walk along line
-        for i in range(s,e+1):
-            if self.vert_n_horz:
-                if self.grid[a0][i] == 1:
-                    p.append((a0,i))
-            else:
-                if self.grid[i][a0] == 1:
-                    p.append((i,a0))
-        print(p)
-        return p
-
     def lenConnected(self, x0, y0, x1, y1):
         assert x0 < self.size
         assert x1 < self.size
@@ -149,10 +114,24 @@ class Pcb:
         self.vias = Grid(size)
         self.fanouts = fanouts
         self.nets = []
-        self.addStartEnds()
+        # Add all nets required
         for sx,sy in fanouts:
             for ex,ey in fanouts[(sx,sy)]:
                 self.nets.append((sx,sy,ex,ey))
+        # Add all cross connects
+        self.crosses = []
+        for sx,sy in self.fanouts:
+            for ex,ey in self.fanouts:
+                if (sx,sy) != (ex,ey):
+                    # Sources to sources
+                    if (ex,ey,sx,sy) not in self.crosses:
+                        self.crosses.append((sx,sy,ex,ey))
+                    # Sources to sinks
+                    for x,y in self.fanouts[(ex,ey)]:
+                        if (ex,ey,sx,sy) not in self.crosses:
+                            self.crosses.append((sx,sy,x,y))
+
+
         self.addStartEnds()
 
     def listNets(self):
@@ -161,10 +140,10 @@ class Pcb:
     def distance(self,x0,y0,x1,y1):
         x = abs(x0 - x1)
         y = abs(y0 - y1)
-        d = (x ** 2) + (y ** 2)
-        return math.sqrt(d)
+        return x + y
 
     def search(self):
+        num_nets = len(self.nets)
         for n_i,n in enumerate(self.nets):
 
             top_n_bottom = True
@@ -182,7 +161,7 @@ class Pcb:
                 # Print Routing update
                 os.system('clear')
                 self.print()
-                print(f"\rNet: {sx},{ey},{ex},{ey},{x},{y},{top_n_bottom},{n_i},{move},{avoids}",end='')
+                print(f"\rNet: {n_i}/{num_nets},{sx},{ey},{ex},{ey},{x},{y},{top_n_bottom},{move},{avoids}",end='')
 
                 # Find possible next steps
                 tpos = []
@@ -340,17 +319,11 @@ class Pcb:
                 for i in range(self.size):
                     for j in range(self.size):
                         c = (i,j)
-                        #if (x,y) != c:
                         if (hopcount % 2) == 0:
-                            #print(f"{x},{y},{i},{j}")
-                            #print(c)
                             if self.top.isConnected(x,y,i,j):
-                                #print("d")
                                 if c == (x1,y1):
-                                    #print("c")
                                     return True
                                 if self.vias.isPresent(i,j):
-                                    #print("v")
                                     if (c not in stack) or (x,y == c):
                                         stack.append(c)
                                         to_pop += 1
@@ -358,14 +331,10 @@ class Pcb:
                             con = self.bottom.isConnected(x,y,i,j)
                             via = self.vias.isPresent(i,j)
                             if con and via and (c not in stack):
-                                #print("b")
                                 stack.append(c)
                                 to_pop += 1
-            #print(stack)
-            #print(to_pop)
             if to_pop == 0:
                 return False
-        # hopcoount
         print(f"\n{stack}")
         assert False
 
@@ -383,18 +352,8 @@ class Pcb:
         return len(self.listCrossConnected())
 
     def listCrossConnected(self):
-        checks = []
         l = []
-        for sx,sy in self.fanouts:
-            for ex,ey in self.fanouts:
-                if (sx,sy) != (ex,ey):
-                    if (ex,ey,sx,sy) not in checks:
-                        checks.append((sx,sy,ex,ey))
-                    for x,y in self.fanouts[(ex,ey)]:
-                        if (ex,ey,sx,sy) not in checks:
-                            checks.append((sx,sy,x,y))
-
-        for sx,sy,ex,ey in checks:
+        for sx,sy,ex,ey in self.crosses:
             if self.isConnected(sx,sy,ex,ey):
                 l.append((sx,sy,ex,ey))
         return l
