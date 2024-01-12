@@ -130,8 +130,6 @@ class Pcb:
                     for x,y in self.fanouts[(ex,ey)]:
                         if (ex,ey,sx,sy) not in self.crosses:
                             self.crosses.append((sx,sy,x,y))
-
-
         self.addStartEnds()
 
     def listNets(self):
@@ -228,7 +226,7 @@ class Pcb:
                         if not top_n_bottom:
                             self.vias.add(x,y)
 
-                        if self.numCrossConnected() == 0:
+                        if not self.hasCrossConnect():
                             top_n_bottom = True
                             break
 
@@ -252,7 +250,7 @@ class Pcb:
                         if top_n_bottom:
                             self.vias.add(x,y)
 
-                        if self.numCrossConnected() == 0:
+                        if not self.hasCrossConnect():
                             top_n_bottom = False
                             break
 
@@ -309,7 +307,6 @@ class Pcb:
         '''
         to_pop = 1
         stack = [(x0,y0)]
-        #print(f"{x1},{y1}")
         for hopcount in range(self.size * self.size):
             end = len(stack)
             start = end - to_pop
@@ -348,6 +345,13 @@ class Pcb:
                 num += 1
         return num
 
+    def hasCrossConnect(self):
+        l = []
+        for sx,sy,ex,ey in self.crosses:
+            if self.isConnected(sx,sy,ex,ey):
+                return True
+        return False
+
     def numCrossConnected(self):
         return len(self.listCrossConnected())
 
@@ -374,24 +378,26 @@ class Pcb:
         j = 0
         for x in range(self.size):
             for y in range(self.size):
-                print(f"\rCleaning: {j}/{self.size ** 2}", end='')
                 j += 1
+                print(f"\rCleaning: {j}/{self.size ** 2}", end='')
                 for i in range(3):
                     if i ==  0:
-                        self.top.remove(x,y)
-                        if self.numConnected() < n:
-                            self.top.add(x,y)
+                        if self.top.isPresent(x,y):
+                            self.top.remove(x,y)
+                            if self.numConnected() < n:
+                                self.top.add(x,y)
                     if i ==  1:
-                        self.vias.remove(x,y)
-                        if self.numConnected() < n:
-                            self.vias.add(x,y)
+                        if self.vias.isPresent(x,y):
+                            self.vias.remove(x,y)
+                            if self.numConnected() < n:
+                                self.vias.add(x,y)
                     if i ==  2:
-                        self.bottom.remove(x,y)
-                        if self.numConnected() < n:
-                            self.bottom.add(x,y)
+                        if self.bottom.isPresent(x,y):
+                            self.bottom.remove(x,y)
+                            if self.numConnected() < n:
+                                self.bottom.add(x,y)
 
     def print(self):
-        print("\nTOP                  VIAS                  BOTTOM")
         for y in range(self.size):
             for i in range(3):
                 for x in range(self.size):
