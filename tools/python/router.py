@@ -396,6 +396,7 @@ class Pcb:
                             self.bottom.remove(x,y)
                             if self.numConnected() < n:
                                 self.bottom.add(x,y)
+        print("")
 
     def print(self):
         for y in range(self.size):

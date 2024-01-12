@@ -252,8 +252,8 @@ with open('vias.pkl', 'wb') as f:
 
 
 def scale(x,y,d,p):
-    sx = x * 5
-    sy = y * 5
+    sx = x * 6
+    sy = y * 6
     if d[0] == "N":
         if p == "Y":
             sx += 4
@@ -261,8 +261,10 @@ def scale(x,y,d,p):
         if p == "A":
             sx += 1
         if p == "B":
-            sy += 8
+            sy += 4
     return sx,sy
+
+print(fanouts)
 
 pcb_fanouts = {}
 for f in fanouts:
