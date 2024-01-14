@@ -50,7 +50,36 @@ class Copper(Grid):
         self.vert_n_horz = vert_n_horz
 
     def isConnected(self, x0, y0, x1, y1):
-        return (self.lenConnected(x0,y0,x1,y1) > 0)
+        #assert x0 < self.size
+        #assert x1 < self.size
+        #assert y0 < self.size
+        #assert y1 < self.size
+        # Rotate if required
+        if self.vert_n_horz:
+            a0 = x0
+            a1 = x1
+            b0 = y0
+            b1 = y1
+        else:
+            a0 = y0
+            a1 = y1
+            b0 = x0
+            b1 = x1
+        # Return if not on same line
+        if a0 != a1:
+            return 0
+        # Find the lower one to start
+        if b0 < b1:
+            s = b0
+            e = b1
+        else:
+            s = b1
+            e = b0
+        # Take slice of line
+        if self.vert_n_horz:
+            return (min(self.grid[a0,s:e+1]) == 1)
+        return (min(self.grid[s:e+1,a0]) == 1)
+
 
     def lenConnected(self, x0, y0, x1, y1):
         assert x0 < self.size
@@ -130,7 +159,7 @@ class Pcb:
                     for x,y in self.fanouts[(ex,ey)]:
                         if (ex,ey,sx,sy) not in self.crosses:
                             self.crosses.append((sx,sy,x,y))
-        self.addStartEnds()
+        #self.addStartEnds()
 
     def listNets(self):
         return self.nets
@@ -204,6 +233,9 @@ class Pcb:
 
                 # Try shortest distance
                 while True:
+                    if (len(tdis) == 0) and (len(bdis) == 0):
+                        break
+
                     # Check there is stuff
                     if len(tdis) > 0:
                         tmin = min(tdis)
@@ -305,6 +337,10 @@ class Pcb:
         '''
         - Allow hopcount to go through a via on every pos on the PCB
         '''
+        if not self.top.isPresent(x1,y1):
+            return False
+        if not self.top.isPresent(x0,y0):
+            return False
         to_pop = 1
         stack = [(x0,y0)]
         for hopcount in range(self.size * self.size):
@@ -375,6 +411,7 @@ class Pcb:
 
     def cleanUp(self):
         n = self.numConnected()
+        rms = 0
         j = 0
         for x in range(self.size):
             for y in range(self.size):
@@ -386,74 +423,84 @@ class Pcb:
                             self.top.remove(x,y)
                             if self.numConnected() < n:
                                 self.top.add(x,y)
+                            else:
+                                rms += 1
                     if i ==  1:
                         if self.vias.isPresent(x,y):
                             self.vias.remove(x,y)
                             if self.numConnected() < n:
                                 self.vias.add(x,y)
+                            else:
+                                rms += 1
                     if i ==  2:
                         if self.bottom.isPresent(x,y):
                             self.bottom.remove(x,y)
                             if self.numConnected() < n:
                                 self.bottom.add(x,y)
-        print("")
+                            else:
+                                rms += 1
+        print(f" - Removals {rms}")
 
     def print(self):
         for y in range(self.size):
-            for i in range(3):
-                for x in range(self.size):
-                    if i == 0:
-                        if self.top.isPresent(x,y):
-                            print("-",end='')
-                        else:
-                            print("O",end='')
-                    if i == 1:
-                        if self.vias.isPresent(x,y):
-                            print("X",end='')
-                        else:
-                            print(",",end='')
-                    if i == 2:
-                        if self.bottom.isPresent(x,y):
-                            print("|",end='')
-                        else:
-                            print("O",end='')
-                print(" ",end='')
+            for x in range(self.size):
+                t = self.top.isPresent(x,y)
+                v = self.vias.isPresent(x,y)
+                b = self.bottom.isPresent(x,y)
+                s = (t,v,b)
+                if s == (False,False,False):
+                    print(".",end='')
+                elif s == (True,False,False):
+                    print("-",end='')
+                elif s == (False,True,False):
+                    print("X",end='')
+                elif s == (True,True,False):
+                    print("X",end='')
+                elif s == (False,False,True):
+                    print("|",end='')
+                elif s == (True,False,True):
+                    print("+",end='')
+                elif s == (False,True,True):
+                    print("X",end='')
+                else:
+                    # True, True, True
+                    print("X",end='')
             print("")
 
-#fanouts = {
-#    (1,1) : [(19,19),(17,17)],
-#    (2,2) : [(18,18)],
-#    (2,4) : [(3,10)],
-#    (5,1) : [(1,10)],
-#    (10,0): [(10,1)],
-#    (19,1) : [(19,8)],
-#    (10,10) : [(5,5)],
-#    (4,4): [(8,8)],
-#    (8,5): [(5,8)],
-#}
-#
-#
-#print("")
-#size = 20
-#pcb = Pcb(size, fanouts)
-#pcb.search()
-#
-#cs = pcb.listConnected()
-#ns = pcb.listNets()
-#xs = pcb.numCrossConnected()
-#
-#print(f"Routed: {len(cs)}/{len(ns)}")
-#print(f"Cross connected: {xs}")
-#
-#pcb.cleanUp()
-#pcb.print()
-#
-#cs = pcb.listConnected()
-#ns = pcb.listNets()
-#xs = pcb.numCrossConnected()
-#
-#print(f"Routed: {len(cs)}/{len(ns)}")
-#print(f"Cross connected: {xs}")
+fanouts = {
+    (1,1) : [(19,19),(17,17)],
+    (2,2) : [(18,18)],
+    (2,4) : [(3,10)],
+    #(5,1) : [(1,10)],
+    (10,0): [(10,1)],
+    (19,1) : [(19,8)],
+    (10,10) : [(5,5)],
+    #(4,4): [(8,8)],
+    (8,5): [(5,8)],
+}
+
+
+print("")
+size = 20
+pcb = Pcb(size, fanouts)
+pcb.search()
+
+cs = pcb.listConnected()
+ns = pcb.listNets()
+xs = pcb.numCrossConnected()
+
+print(f"Routed: {len(cs)}/{len(ns)}")
+print(f"Cross connected: {xs}")
+
+pcb.cleanUp()
+pcb.print()
+
+cs = pcb.listConnected()
+ns = pcb.listNets()
+xs = pcb.numCrossConnected()
+
+print(f"Routed: {len(cs)}/{len(ns)}")
+print(f"Cross connected: {xs}")
 
 
 

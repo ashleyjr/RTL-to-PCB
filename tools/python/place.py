@@ -140,12 +140,14 @@ for n in all_nets:
                 if cell not in ass[n]:
                     ass[n].append(cell)
 for a in ass:
+    print(a)
     print(ass[a])
 
 # Collect all wire pairs
 pairs = []
 for net_a in ass:
     for net_b in ass:
+        print(f"{net_a}{net_b}")
         if net_a != net_b:
             p = []
             p.append(ass[net_a][0])
@@ -282,7 +284,7 @@ for f in fanouts:
 
 print(pcb_fanouts)
 
-size = 30
+size = sqr * 6
 pcb = Pcb(size, pcb_fanouts)
 pcb.search()
 
