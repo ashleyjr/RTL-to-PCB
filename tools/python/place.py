@@ -254,16 +254,14 @@ with open('vias.pkl', 'wb') as f:
 
 
 def scale(x,y,d,p):
-    sx = x * 6
-    sy = y * 6
+    sx = (x * 7) + 5
+    sy = (y * 11) + 5
     if d[0] == "N":
         if p == "Y":
-            sx += 4
-            sy += 4
-        if p == "A":
-            sx += 1
+            sx += 5
+            sy += 5
         if p == "B":
-            sy += 4
+            sy += 5
     return sx,sy
 
 print(fanouts)
@@ -276,16 +274,21 @@ for f in fanouts:
     pcb_fanouts[(sx,sy)] = []
 
     for s in fanouts[f]:
-        x = pos[f]['x']
-        y = pos[f]['y']
+        x = pos[s]['x']
+        y = pos[s]['y']
         ssx,ssy = scale(x,y,s,fanouts[f][s])
         pcb_fanouts[(sx,sy)].append((ssx,ssy))
 
 
-print(pcb_fanouts)
+for p in pcb_fanouts:
+    print(f"{p},{pcb_fanouts[p]}")
 
-size = sqr * 6
+
+size = sqr * 11
 pcb = Pcb(size, pcb_fanouts)
+pcb.print(True)
+
+
 pcb.search()
 
 cs = pcb.listConnected()

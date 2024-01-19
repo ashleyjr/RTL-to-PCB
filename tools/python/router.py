@@ -2,6 +2,7 @@ import numpy as np
 import random
 import os
 import math
+from copy import copy, deepcopy
 
 class Grid:
 
@@ -10,7 +11,7 @@ class Grid:
         self.grid = np.zeros((size, size), dtype=int)
         self.last_grid = self.grid
 
-    def addKeepOut(self, x0, y0, x1, y1):
+    def addKeepOutBox(self, x0, y0, x1, y1):
         ''' Add a box keepout region '''
         if x0 < x1:
             xs = x0
@@ -30,6 +31,9 @@ class Grid:
 
     def isKeepOut(self, x, y):
         return self.grid[x][y] == 2
+
+    def rmKeepOut(self, x, y):
+        self.grid[x][y] == 0
 
     def remove(self, x, y):
         if not self.isKeepOut(x, y):
@@ -135,6 +139,13 @@ class Copper(Grid):
 
 
 class Pcb:
+    TOP_KO_OFFSET_MM=6
+    TOP_KO_WIDTH_MM=4
+    TOP_KO_PITCH_MM=11
+    BOT_KO_OFFSET_MM=3
+    BOT_KO_WIDTH_MM=3
+    BOT_KO_PITCH_MM=7
+
 
     def __init__(self, size, fanouts):
         self.size = size
@@ -159,7 +170,16 @@ class Pcb:
                     for x,y in self.fanouts[(ex,ey)]:
                         if (ex,ey,sx,sy) not in self.crosses:
                             self.crosses.append((sx,sy,x,y))
-        #self.addStartEnds()
+        # Add keepouts
+        for x in range(self.BOT_KO_OFFSET_MM,self.size-self.BOT_KO_OFFSET_MM-1,self.BOT_KO_PITCH_MM):
+            self.bottom.addKeepOutBox(x,0,x+self.BOT_KO_WIDTH_MM-1,self.size-1)
+            self.vias.addKeepOutBox(x,0,x+self.BOT_KO_WIDTH_MM-1,self.size-1)
+
+        for y in range(self.TOP_KO_OFFSET_MM,self.size-self.TOP_KO_OFFSET_MM-1,self.TOP_KO_PITCH_MM):
+            self.top.addKeepOutBox(0,y,self.size-1,y+self.TOP_KO_WIDTH_MM-1)
+            self.vias.addKeepOutBox(0,y,self.size-1,y+self.TOP_KO_WIDTH_MM-1)
+
+
 
     def listNets(self):
         return self.nets
@@ -172,133 +192,171 @@ class Pcb:
     def search(self):
         num_nets = len(self.nets)
         for n_i,n in enumerate(self.nets):
-
-            top_n_bottom = True
             sx,sy,ex,ey = n
             x = sx
             y = sy
-            avoids = []
+            top_n_bottom = True
+            last_x = x
+            last_y = y
+            last_top_n_bottom = True
             self.top.add(x,y)
-            # Timeout
-            for move in range(self.size * 2):
+            restore_top = deepcopy(self.top)
+            restore_vias = deepcopy(self.vias)
+            restore_bottom = deepcopy(self.bottom)
+            tavoids = []
+            bavoids = []
+            while True:
                 # Done
                 if ((x,y) == (ex,ey)) and top_n_bottom:
                     break
+                # Timeout is
+                for move in range(self.size * 2):
+                    # Done
+                    if ((x,y) == (ex,ey)) and top_n_bottom:
+                        break
+                    # Print Routing update
+                    os.system('clear')
+                    self.print(True)
+                    print(f"\rNet: {n_i}/{num_nets},{sx},{ey},{ex},{ey},{x},{y},{top_n_bottom},{move},{tavoids},{bavoids}",end='')
+                    # Find possible next steps
+                    tpos = []
+                    bpos = []
+                    print(f"{x},{y}")
+                    if top_n_bottom:
+                        if  not self.bottom.isKeepOut(x,y) and \
+                            not self.vias.isKeepOut(x,y) and \
+                            not ((x,y,False) == (last_x,last_y,last_top_n_bottom)) and \
+                            not (x,y) in bavoids:
+                            bpos.append((x,y))
+                        if x != 0:
+                            if  not self.top.isKeepOut(x-1,y) and \
+                                not ((x-1,y,True) == (last_x,last_y,last_top_n_bottom)) and \
+                                not (x-1,y) in tavoids:
+                                tpos.append((x-1,y))
+                        if x != (self.size-1):
+                            if  not self.top.isKeepOut(x+1,y) and \
+                                not ((x+1,y,True) == (last_x,last_y,last_top_n_bottom)) and \
+                                not (x+1,y) in tavoids:
+                                tpos.append((x+1,y))
+                    else:
+                        if  not self.top.isKeepOut(x,y) and \
+                            not self.vias.isKeepOut(x,y) and \
+                            not ((x,y,True) == (last_x,last_y,last_top_n_bottom)) and \
+                            not (x,y) in tavoids:
+                            tpos.append((x,y))
+                        if y != 0:
+                            if  not self.bottom.isKeepOut(x,y-1) and \
+                                not ((x,y-1,False) == (last_x,last_y,last_top_n_bottom)) and \
+                                not (x,y-1) in bavoids:
+                                bpos.append((x,y-1))
+                        if y != (self.size-1):
+                            if  not self.bottom.isKeepOut(x,y+1) and \
+                                not ((x,y+1,False) == (last_x,last_y,last_top_n_bottom)) and \
+                                not (x,y+1) in bavoids:
+                                bpos.append((x,y+1))
 
-                # Print Routing update
-                os.system('clear')
-                self.print()
-                print(f"\rNet: {n_i}/{num_nets},{sx},{ey},{ex},{ey},{x},{y},{top_n_bottom},{move},{avoids}",end='')
+                    last_x = x
+                    last_y = y
+                    last_top_n_bottom = top_n_bottom
 
-                # Find possible next steps
-                tpos = []
-                bpos = []
-                if top_n_bottom:
-                    if  not self.bottom.isKeepOut(x,y) and \
-                        not self.vias.isKeepOut(x,y) and \
-                        not (x,y) in avoids:
-                        bpos.append((x,y))
-                    if x != 0:
-                        if  not self.top.isKeepOut(x-1,y) and \
-                            not (x-1,y) in avoids:
-                            tpos.append((x-1,y))
-                    if x != (self.size-1):
-                        if  not self.top.isKeepOut(x+1,y) and \
-                            not (x+1,y) in avoids:
-                            tpos.append((x+1,y))
-                else:
-                    if  not self.top.isKeepOut(x,y) and \
-                        not self.vias.isKeepOut(x,y) and \
-                        not (x,y) in avoids:
-                        tpos.append((x,y))
-                    if y != 0:
-                        if  not self.bottom.isKeepOut(x,y-1) and \
-                            not (x,y-1) in avoids:
-                            bpos.append((x,y-1))
-                    if y != (self.size-1):
-                        if  not self.bottom.isKeepOut(x,y+1) and \
-                            not (x,y+1) in avoids:
-                            bpos.append((x,y+1))
-
-                # Nowhere to go
-                assert (len(bpos) + len(tpos)) > 0
-
-                # Find the distances of all points
-                tdis = []
-                for tx,ty in tpos:
-                    tdis.append(self.distance(tx,ty,ex,ey))
-                bdis = []
-                for bx,by in bpos:
-                    bdis.append(self.distance(bx,by,ex,ey))
-
-                # Try shortest distance
-                while True:
-                    if (len(tdis) == 0) and (len(bdis) == 0):
+                    # Nowhere to go
+                    if(len(bpos) + len(tpos)) == 0:
+                        if top_n_bottom:
+                            tavoids.append((x,y))
+                        else:
+                            bavoids.append((x,y))
+                        self.top = restore_top
+                        self.vias = restore_vias
+                        self.bottom = restore_bottom
+                        x = sx
+                        y = sy
                         break
 
-                    # Check there is stuff
-                    if len(tdis) > 0:
-                        tmin = min(tdis)
-                    else:
-                        tmin = math.inf
-                    if len(bdis) > 0:
-                        bmin = min(bdis)
-                    else:
-                        bmin = math.inf
+                    # Find the distances of all points
+                    tdis = []
+                    for tx,ty in tpos:
+                        tdis.append(self.distance(tx,ty,ex,ey))
+                    bdis = []
+                    for bx,by in bpos:
+                        bdis.append(self.distance(bx,by,ex,ey))
 
+                    # Try shortest distance
+                    while True:
+                        # No where to go
+                        if ((len(tdis) + len(bdis)) == 0):
+                            if top_n_bottom:
+                                tavoids.append((x,y))
+                            else:
+                                bavoids.append((x,y))
+                            del(self.top)
+                            del(self.vias)
+                            del(self.bottom)
 
-                    # Make the shortest distance
-                    if tmin < bmin:
-                        i = tdis.index(min(tdis))
-                        x,y = tpos[i]
+                            self.top = restore_top
+                            self.vias = restore_vias
+                            self.bottom = restore_bottom
 
-                        t_keep_if_bad = self.top.isPresent(x,y)
-                        self.top.add(x,y)
-
-                        if not top_n_bottom:
-                            self.vias.add(x,y)
-
-                        if not self.hasCrossConnect():
-                            top_n_bottom = True
+                            x = sx
+                            y = sy
                             break
 
-                        if not t_keep_if_bad:
-                            self.top.remove(x,y)
+                        # Check there is stuff
+                        if len(tdis) > 0:
+                            tmin = min(tdis)
+                        else:
+                            tmin = math.inf
+                        if len(bdis) > 0:
+                            bmin = min(bdis)
+                        else:
+                            bmin = math.inf
 
-                        if not top_n_bottom:
-                            self.vias.remove(x,y)
+                        # Make the shortest distance
+                        if tmin < bmin:
+                            i = tdis.index(min(tdis))
+                            x,y = tpos[i]
 
-                        del tpos[i]
-                        del tdis[i]
-                        # Avoids this in the future
-                        avoids.append((x,y))
-                    else:
-                        i = bdis.index(min(bdis))
-                        x,y = bpos[i]
+                            t_keep_if_bad = self.top.isPresent(x,y)
+                            self.top.add(x,y)
 
-                        b_keep_if_bad = self.bottom.isPresent(x,y)
-                        self.bottom.add(x,y)
+                            if not top_n_bottom:
+                                self.vias.add(x,y)
 
-                        if top_n_bottom:
-                            self.vias.add(x,y)
+                            if not self.hasCrossConnect():
+                                top_n_bottom = True
+                                break
 
-                        if not self.hasCrossConnect():
-                            top_n_bottom = False
-                            break
+                            if not t_keep_if_bad:
+                                self.top.remove(x,y)
 
-                        if not b_keep_if_bad:
-                            self.bottom.remove(x,y)
+                            if not top_n_bottom:
+                                self.vias.remove(x,y)
 
-                        if top_n_bottom:
-                            self.vias.remove(x,y)
+                            del tpos[i]
+                            del tdis[i]
+                            tavoids.append((x,y))
+                        else:
+                            i = bdis.index(min(bdis))
+                            x,y = bpos[i]
 
-                        del bpos[i]
-                        del bdis[i]
-                        # Avoids this in the future
-                        avoids.append((x,y))
+                            b_keep_if_bad = self.bottom.isPresent(x,y)
+                            self.bottom.add(x,y)
 
-            os.system('clear')
-            self.print()
+                            if top_n_bottom:
+                                self.vias.add(x,y)
+
+                            if not self.hasCrossConnect():
+                                top_n_bottom = False
+                                break
+
+                            if not b_keep_if_bad:
+                                self.bottom.remove(x,y)
+
+                            if top_n_bottom:
+                                self.vias.remove(x,y)
+
+                            del bpos[i]
+                            del bdis[i]
+                            bavoids.append((x,y))
 
     def addStartEnds(self):
         # Initialise the top copper with all the start/end points
@@ -441,7 +499,7 @@ class Pcb:
                                 rms += 1
         print(f" - Removals {rms}")
 
-    def print(self):
+    def print(self, start_ends=False):
         for y in range(self.size):
             for x in range(self.size):
                 t = self.top.isPresent(x,y)
@@ -449,61 +507,41 @@ class Pcb:
                 b = self.bottom.isPresent(x,y)
                 s = (t,v,b)
                 if s == (False,False,False):
-                    print(".",end='')
+                    c = " "
                 elif s == (True,False,False):
-                    print("-",end='')
+                    c = "-"
                 elif s == (False,True,False):
-                    print("X",end='')
+                    c = "X"
                 elif s == (True,True,False):
-                    print("X",end='')
+                    c = "X"
                 elif s == (False,False,True):
-                    print("|",end='')
+                    c = "|"
                 elif s == (True,False,True):
-                    print("+",end='')
+                    c = "+"
                 elif s == (False,True,True):
-                    print("X",end='')
+                    c = "X"
                 else:
                     # True, True, True
-                    print("X",end='')
+                    c = "X"
+                # Keep outs
+                t = self.top.isKeepOut(x,y)
+                b = self.bottom.isKeepOut(x,y)
+                if (c == " ") and (t and b):
+                    c = "#"
+                elif (c == " ") and t:
+                    c = ">"
+                elif (c == " ") and b:
+                    c = "^"
+
+
+
+                # Add start ends
+                if start_ends:
+                    for n in self.nets:
+                        sx,sy,ex,ey = n
+                        if ((sx,sy) == (x,y)) or ((ex,ey) == (x,y)):
+                            c = "O"
+                print(c,end='')
             print("")
-
-fanouts = {
-    (1,1) : [(19,19),(17,17)],
-    (2,2) : [(18,18)],
-    (2,4) : [(3,10)],
-    #(5,1) : [(1,10)],
-    (10,0): [(10,1)],
-    (19,1) : [(19,8)],
-    (10,10) : [(5,5)],
-    #(4,4): [(8,8)],
-    (8,5): [(5,8)],
-}
-
-
-print("")
-size = 20
-pcb = Pcb(size, fanouts)
-pcb.search()
-
-cs = pcb.listConnected()
-ns = pcb.listNets()
-xs = pcb.numCrossConnected()
-
-print(f"Routed: {len(cs)}/{len(ns)}")
-print(f"Cross connected: {xs}")
-
-pcb.cleanUp()
-pcb.print()
-
-cs = pcb.listConnected()
-ns = pcb.listNets()
-xs = pcb.numCrossConnected()
-
-print(f"Routed: {len(cs)}/{len(ns)}")
-print(f"Cross connected: {xs}")
-
-
-
-
 
 
