@@ -19,15 +19,31 @@ Pcb::Pcb(uint32_t s, bool d){
    // Net 0 is empty
    net = 0;
    // Init layers
-   for(uint32_t i=0;i<size;i++){
-      for(uint32_t j=0;j<size;j++){
-         top[i][j] = 0;
-         via[i][j] = 0;
-         bot[i][j] = 0;
-         top_ko[i][j] = 0; 
-         bot_ko[i][j] = 0;
+   for(uint32_t x=0;x<size;x++){
+      for(uint32_t y=0;y<size;y++){
+         top[x][y] = 0;
+         via[x][y] = 0;
+         bot[x][y] = 0;
+         top_ko[x][y] = 0; 
+         bot_ko[x][y] = 0;
       }
-   } 
+   }
+   // Top keepout region
+   for(uint32_t x=0;x<size;x++){
+      for(uint32_t y=KO_TOP_OFFSET;y<size;y+=KO_TOP_PITCH){ 
+         for(uint32_t w=0;w<KO_TOP_WIDTH;w++){ 
+            top_ko[x][y+w] = 1;
+         }
+      }
+   }
+   // Bottom keepout region
+   for(uint32_t x=KO_BOT_OFFSET;x<size;x+=KO_BOT_PITCH){
+      for(uint32_t y=0;y<size;y++){ 
+         for(uint32_t w=0;w<KO_BOT_WIDTH;w++){ 
+            bot_ko[x+w][y] = 1;
+         }
+      }
+   }
 }
 
 bool Pcb::KoFree(Path const p){
@@ -70,8 +86,7 @@ bool Pcb::AddTrace(Coord const c[], uint8_t const l){
    // - TODO: Could change order of pairs for shorter
    //         distances
    for(uint32_t i=0;i<(l-1);i++){ 
-      printf("Routing net %d, pair %d\n",net,i);
-      
+      printf("Routing net %d, pair %d\n",net,i); 
       Coord s;
       Coord e; 
       s = c[i];
@@ -162,6 +177,9 @@ bool Pcb::AddTrace(Coord const c[], uint8_t const l){
 
             // If nowhere to go
             if(options.size() == 0){
+               if(debug){
+                  printf("Failed to route");
+               }
                avoid.push_back(path.back());
                break;
             } 
@@ -235,15 +253,25 @@ void Pcb::Print(void){
    for(uint32_t y=0;y<size;y++){
       for(uint32_t x=0;x<size;x++){ 
          uint8_t code = 0;
-         if(top[x][y] != 0) code |= 0x01;
-         if(bot[x][y] != 0) code |= 0x02;
-         if(via[x][y] != 0) code  = 0x10;
+         if(top[x][y] != 0)    code |= 0x01;
+         if(bot[x][y] != 0)    code |= 0x02;
+         if(via[x][y] != 0)    code |= 0x04;
+         if(top_ko[x][y] != 0) code |= 0x08;
+         if(bot_ko[x][y] != 0) code |= 0x10;
          switch(code){
             case 0x00: printf("."); break;
-            case 0x01: printf("-"); break;
-            case 0x02: printf("|"); break;
+            case 0x01: 
+            case 0x11: printf("-"); break;
+            case 0x02: 
+            case 0x0A: printf("|"); break;
             case 0x03: printf("+"); break;
-            case 0x10: printf("X"); break;
+            case 0x04:
+            case 0x05:
+            case 0x06:
+            case 0x07: printf("X"); break;
+            case 0x08: printf(">"); break;
+            case 0x10: printf("^"); break; 
+            case 0x18: printf("#"); break;
          }
       }
       printf("\n");

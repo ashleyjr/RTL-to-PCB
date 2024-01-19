@@ -6,6 +6,15 @@
 
 #define MAX_SIZE 100
 
+#define KO_TOP_OFFSET 5
+#define KO_TOP_PITCH  10
+#define KO_TOP_WIDTH  5
+
+#define KO_BOT_OFFSET 5
+#define KO_BOT_PITCH  20
+#define KO_BOT_WIDTH  3
+
+
 typedef struct Path{                
    Coord coord;
    bool top_n_bottom;
