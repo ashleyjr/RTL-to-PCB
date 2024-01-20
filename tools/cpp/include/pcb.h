@@ -8,18 +8,42 @@
 
 #define KO_TOP_OFFSET 5
 #define KO_TOP_PITCH  10
-#define KO_TOP_WIDTH  5
+#define KO_TOP_WIDTH  4
 
 #define KO_BOT_OFFSET 5
-#define KO_BOT_PITCH  20
-#define KO_BOT_WIDTH  3
+#define KO_BOT_PITCH  10
+#define KO_BOT_WIDTH  4
+
+enum PinIn { 
+   A, // NOR.A
+   B, // NOR.B
+   C, // DFF.CLK
+   D, // DFF.DATA
+   X  // PAD
+};
+
+enum PinOut { 
+   Q, // DFF.OUTPUT 
+   Y, // NOR.OUTPUT
+   Z  // PAD
+};
+
+
+typedef struct Input{                  
+   PinIn pin;
+} Input;
+
+
+typedef struct Fanout{                 
+   PinOut out;
+   std::vector<PinIn> fan;
+} Fanout;
 
 
 typedef struct Path{                
    Coord coord;
    bool top_n_bottom;
 } Path;
-
 
 bool operator==(const Path& l, const Path& r);
 

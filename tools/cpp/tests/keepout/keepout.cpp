@@ -3,7 +3,7 @@
 
 int main(int argc, char** argv, char** env) {
      
-   Pcb p(50,true);
+   Pcb p(50,false);
    Coord c[10];
 
    c[0].x = 26; 
