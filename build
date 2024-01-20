@@ -8,6 +8,6 @@ yosys \
    -p "synth -top x_$1"\
    -p "dfflibmap -liberty lib/cells.lib"\
    -p "abc -liberty lib/cells.lib"\
-   -p "write_table $1.txt" > $1.log
+   -p "write_table x_$1.txt" > x_$1.log
 
-python3 tools/python/check_cells.py --filename $1.txt --top x_$1 --quiet
+python3 tools/python/check_cells.py --top x_$1 --quiet

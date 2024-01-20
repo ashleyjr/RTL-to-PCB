@@ -2,9 +2,9 @@
 #define CELL_H
 
 enum class CellType { 
-   PAD,
+   DFF,
    NOR,
-   FF
+   PAD
 }
 
 struct {                
