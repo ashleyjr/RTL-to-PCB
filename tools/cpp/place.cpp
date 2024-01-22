@@ -34,6 +34,10 @@ Place::Place(Schematic s){
    }
 }
 
+uint8_t Place::GetSize(void){
+   return sqr;
+}
+
 void Place::PrintList(void){
    for (auto const& p : places) {   
       if(p.decap){

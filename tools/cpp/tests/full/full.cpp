@@ -3,6 +3,7 @@
 #include "../../include/schematic.h"
 #include "../../include/place.h"
 #include "../../include/pcb.h"
+#include "../../include/coords.h"
 
 int main(int argc, char** argv, char** env) {
  

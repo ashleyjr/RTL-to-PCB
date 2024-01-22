@@ -14,6 +14,7 @@ typedef struct Placed {
 class Place{
    public:
       Place(Schematic s);
+      uint8_t GetSize(void);
       void PrintList(void);
       void PrintGrid(void);
    private:

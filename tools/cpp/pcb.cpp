@@ -12,9 +12,9 @@ bool operator==(const Path& l, const Path& r){
    return ((l.coord == r.coord) && (l.top_n_bottom == r.top_n_bottom)); 
 }
 
-Pcb::Pcb(uint32_t s, bool d){   
+Pcb::Pcb(Place p, bool d){   
    debug = d;
-   size = s;
+   size = p.GetSize() * CELL_SIZE;
    // Net number increments with every trace
    // Net 0 is empty
    net = 0;

@@ -3,8 +3,11 @@
 
 #include <vector>
 #include "coords.h"
+#include "place.h"
 
 #define MAX_SIZE 100
+
+#define CELL_SIZE 5
 
 #define KO_TOP_OFFSET 5
 #define KO_TOP_PITCH  10
@@ -51,7 +54,7 @@ class Pcb{
    public:
       /*   size: The number of cells on the PCB
        */
-      Pcb(uint32_t s, bool d);
+      Pcb(Place p, bool d);
       /*   c: Array of coordinates
        *   l: Number of points in array
        */
