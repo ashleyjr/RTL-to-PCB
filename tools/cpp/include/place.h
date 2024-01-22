@@ -15,6 +15,9 @@ class Place{
    public:
       Place(Schematic s);
       uint8_t GetSize(void);
+      const std::vector<Placed> GetPlacedSrcs(void);
+      const std::vector<Placed> GetPlacedSinksAC(const Placed src);
+      const std::vector<Placed> GetPlacedSinksBQ(const Placed src);  
       void PrintList(void);
       void PrintGrid(void);
    private:

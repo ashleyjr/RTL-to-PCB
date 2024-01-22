@@ -38,6 +38,42 @@ uint8_t Place::GetSize(void){
    return sqr;
 }
 
+const std::vector<Placed> Place::GetPlacedSrcs(void){
+   std::vector<Placed> s;
+   for (auto const& p : places) {   
+      if(p.cell.type != CellType::OUT){
+         s.push_back(p);
+      } 
+   }
+   return s;
+}
+
+const std::vector<Placed> Place::GetPlacedSinksAC(const Placed src){
+   std::vector<Placed> s;
+   for (auto const& p : places) {   
+      if(((p.cell.type ==  CellType::DFF) || 
+          (p.cell.type ==  CellType::NOR)) &&  
+          (src.cell.net_y_q == p.cell.net_a_c)){
+         s.push_back(p); 
+      }
+       
+   }
+   return s;
+}
+
+const std::vector<Placed> Place::GetPlacedSinksBQ(const Placed src){
+   std::vector<Placed> s;
+   for (auto const& p : places) {   
+      if(((p.cell.type ==  CellType::DFF) || 
+          (p.cell.type ==  CellType::NOR)) &&  
+          (src.cell.net_y_q == p.cell.net_b_d)){
+         s.push_back(p); 
+      }
+       
+   }
+   return s;
+}
+
 void Place::PrintList(void){
    for (auto const& p : places) {   
       if(p.decap){

@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <stdio.h>
+#include <algorithm>
 #include "include/schematic.h"   
 
 Schematic::Schematic(std::string path){     
@@ -76,4 +77,21 @@ void Schematic::Print(void){
 std::vector<Cell> Schematic::GetCells(void){
    return cells;
 }
+
+std::vector<uint32_t> Schematic::GetNets(void){
+   std::vector<uint32_t> nets;
+   for (auto const& c : cells){
+      if(std::find(nets.begin(), nets.end(), c.net_a_c) == nets.end()){ 
+         nets.push_back(c.net_a_c);
+      }
+      if(std::find(nets.begin(), nets.end(), c.net_b_d) == nets.end()){
+         nets.push_back(c.net_b_d);
+      }
+      if(std::find(nets.begin(), nets.end(), c.net_y_q) == nets.end()){
+         nets.push_back(c.net_y_q);
+      }
+   }
+   return nets;
+}
+
 

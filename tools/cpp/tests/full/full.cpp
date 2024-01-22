@@ -10,7 +10,9 @@ int main(int argc, char** argv, char** env) {
    std::string path = argv[1]; 
    Schematic sch(path);
    Place place(sch);      
-   Pcb pcb(place,false); 
+   place.PrintList();
+   Pcb pcb(&sch, &place, true); 
+   pcb.Print();
    return 0;
 }
 
