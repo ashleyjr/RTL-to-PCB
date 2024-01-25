@@ -33,21 +33,38 @@ Pcb::Pcb(Schematic * s, Place * p, bool d){
       Coord start = src.pos;
       start.x *= CELL_SIZE;
       start.y *= CELL_SIZE;           
-      start.x += 4;
-      start.y += 4;
+      start.x += 6;
+      start.y += 3;
       for (auto const& sink : places->GetPlacedSinksAC(src)){     
-         Coord end = sink.pos;
-         end.x *= CELL_SIZE; 
-         end.y *= CELL_SIZE;
-         AddTrace(start,end,src.cell.net_y_q);
+         Seek s;
+         s.start = start;
+         s.end = sink.pos;
+         s.end.x *= CELL_SIZE; 
+         s.end.x += 2;
+         s.end.y *= CELL_SIZE;
+         s.net = src.cell.net_y_q;
+         seeks.push_back(s);
       }
       for (auto const& sink : places->GetPlacedSinksBQ(src)){    
-         Coord end = sink.pos;
-         end.x *= CELL_SIZE; 
-         end.y *= CELL_SIZE;
-         end.y += 4;
-         AddTrace(start,end,src.cell.net_y_q);
+         Seek s;
+         s.start = start;
+         s.end = sink.pos;
+         s.end.x *= CELL_SIZE; 
+         s.end.x += 2;
+         s.end.y *= CELL_SIZE;
+         s.end.y += 4;
+         s.net = src.cell.net_y_q;
+         seeks.push_back(s); 
       }
+   }
+   // Reserve start/ends
+   for(auto const& seek  : seeks){
+      top[seek.start.x][seek.start.y] = seek.net;
+      top[seek.end.x][seek.end.y] = seek.net;
+   }
+   // Route
+   for(auto const& seek  : seeks){
+      AddTrace(seek.start,seek.end,seek.net);
    }
    // Top keepout region
    //for(uint32_t x=0;x<size;x++){
@@ -88,16 +105,6 @@ bool Pcb::In(Path const f, std::vector<Path> const l){
 }
 
 bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){ 
-   // Check all points on top copper are free  
-   if((top[start.x][start.y] != -1) ||
-      (top_ko[start.x][start.y] != -1)) {
-      return false;  
-   } 
-   if((top[end.x][end.y] != -1) ||
-      (top_ko[end.x][end.y] != -1)) {
-      return false;  
-   } 
-
    // Route each pair
    // - TODO: Could change order of pairs for shorter
    //         distances 
@@ -126,10 +133,12 @@ bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){
          if(path.back().top_n_bottom){
             if(!n_edge){ 
                Path t = path.back();
-               t.coord.y--;
                t.top_n_bottom = false;
                if(KoFree(t) && CopperOk(t,net) && !In(t, avoid) && !In(t, path)){ 
-                  options.push_back(t);     
+                  t.coord.y--;
+                  if(KoFree(t) && CopperOk(t,net) && !In(t, avoid) && !In(t, path)){ 
+                     options.push_back(t);     
+                  }
                }
             }
             if(!e_edge){ 
@@ -141,10 +150,12 @@ bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){
             }
             if(!s_edge){ 
                Path t = path.back();
-               t.coord.y++;
                t.top_n_bottom = false;
-               if(KoFree(t) && CopperOk(t,net) && !In(t, avoid) && !In(t, path)){ 
-                  options.push_back(t);     
+               if(KoFree(t) && CopperOk(t,net) && !In(t, avoid) && !In(t, path)){  
+                  t.coord.y++;
+                  if(KoFree(t) && CopperOk(t,net) && !In(t, avoid) && !In(t, path)){ 
+                     options.push_back(t);     
+                  }
                }
             }
             if(!w_edge){ 
@@ -164,10 +175,12 @@ bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){
             }
             if(!e_edge){ 
                Path t = path.back();
-               t.coord.x++;
                t.top_n_bottom = true;
-               if(KoFree(t) && CopperOk(t,net) && ! In(t, avoid)&& !In(t, path)){ 
-                  options.push_back(t);     
+               if(KoFree(t) && CopperOk(t,net) && ! In(t, avoid) && !In(t, path)){ 
+                  t.coord.x++; 
+                  if(KoFree(t) && CopperOk(t,net) && ! In(t, avoid) && !In(t, path)){ 
+                     options.push_back(t);     
+                  }
                }
             }
             if(!s_edge){ 
@@ -179,10 +192,12 @@ bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){
             }
             if(!w_edge){ 
                Path t = path.back();
-               t.coord.x--;
                t.top_n_bottom = true;
                if(KoFree(t) && CopperOk(t,net) && ! In(t, avoid)&& !In(t, path)){ 
-                  options.push_back(t);     
+                  t.coord.x--;
+                  if(KoFree(t) && CopperOk(t,net) && ! In(t, avoid)&& !In(t, path)){ 
+                     options.push_back(t);     
+                  }
                }
             }
          } 
@@ -247,7 +262,8 @@ bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){
             last = p;
          }
       }
-   }  
+   }
+   Print();
    return true;
 }
 
@@ -277,6 +293,16 @@ void Pcb::Print(void){
          if(via[x][y] != -1)    code |= 0x04;
          if(top_ko[x][y] != -1) code |= 0x08;
          if(bot_ko[x][y] != -1) code |= 0x10;
+         //for (auto const& seek : seeks){    
+         //   if((seek.start.x == x) && 
+         //      (seek.start.y == y)){
+         //      code = 0x20;
+         //   }
+         //   if((seek.end.x == x) && 
+         //      (seek.end.y == y)){
+         //      code = 0x40;
+         //   }
+         //}
          switch(code){
             case 0x00: printf("."); break;
             case 0x01: 
@@ -291,7 +317,9 @@ void Pcb::Print(void){
             case 0x08: printf(">"); break;
             case 0x10: printf("^"); break; 
             case 0x18: printf("#"); break;
-         }
+            case 0x20: printf("S"); break; 
+            case 0x40: printf("E"); break;
+         } 
       }
       printf("\n");
    }

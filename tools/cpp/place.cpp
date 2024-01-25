@@ -24,12 +24,15 @@ Place::Place(Schematic s){
       places.push_back(p);
    }
    // Assign positions
-   for(uint8_t x=0;x<sqr;x++){
-      uint16_t i = x * sqr;
-      for(uint8_t y=0;y<sqr;y++){
-         uint16_t j = 
-         places[i+y].pos.x = x;
-         places[i+y].pos.y = y;
+   uint32_t x = 0;
+   uint32_t y = 0;
+   for(uint32_t i=0;i<(sqr*sqr);i++){ 
+      places[i].pos.x = x; 
+      places[i].pos.y = y;
+      x++;
+      if(x == sqr){
+         x = 0;
+         y++;
       }
    }
 }
@@ -41,9 +44,11 @@ uint8_t Place::GetSize(void){
 const std::vector<Placed> Place::GetPlacedSrcs(void){
    std::vector<Placed> s;
    for (auto const& p : places) {   
-      if(p.cell.type != CellType::OUT){
-         s.push_back(p);
-      } 
+      if(!p.decap){
+         if(p.cell.type != CellType::OUT){
+            s.push_back(p);
+         } 
+      }
    }
    return s;
 }
@@ -52,8 +57,10 @@ const std::vector<Placed> Place::GetPlacedSinksAC(const Placed src){
    std::vector<Placed> s;
    for (auto const& p : places) {   
       if(((p.cell.type ==  CellType::DFF) || 
-          (p.cell.type ==  CellType::NOR)) &&  
-          (src.cell.net_y_q == p.cell.net_a_c)){
+          (p.cell.type ==  CellType::NOR) || 
+          (p.cell.type ==  CellType::OUT)) &&  
+          (src.cell.net_y_q == p.cell.net_a_c) && 
+          (!p.decap)){
          s.push_back(p); 
       }
        
@@ -66,7 +73,8 @@ const std::vector<Placed> Place::GetPlacedSinksBQ(const Placed src){
    for (auto const& p : places) {   
       if(((p.cell.type ==  CellType::DFF) || 
           (p.cell.type ==  CellType::NOR)) &&  
-          (src.cell.net_y_q == p.cell.net_b_d)){
+          (src.cell.net_y_q == p.cell.net_b_d) && 
+          (!p.decap)){
          s.push_back(p); 
       }
        
@@ -93,8 +101,8 @@ void Place::PrintList(void){
 
 
 void Place::PrintGrid(void){
-   for(uint8_t x=0;x<sqr;x++){ 
-      for(uint8_t y=0;y<sqr;y++){
+   for(uint8_t y=0;y<sqr;y++){ 
+      for(uint8_t x=0;x<sqr;x++){
          for (auto const& p : places) {   
             if((p.pos.x == x) && (p.pos.y == y)){
                if(p.decap){

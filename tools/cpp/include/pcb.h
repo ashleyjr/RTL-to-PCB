@@ -17,31 +17,11 @@
 #define KO_BOT_PITCH  10
 #define KO_BOT_WIDTH  4
 
-enum PinIn { 
-   A, // NOR.A
-   B, // NOR.B
-   C, // DFF.CLK
-   D, // DFF.DATA
-   X  // PAD
-};
-
-enum PinOut { 
-   Q, // DFF.OUTPUT 
-   Y, // NOR.OUTPUT
-   Z  // PAD
-};
-
-
-typedef struct Input{                  
-   PinIn pin;
-} Input;
-
-
-typedef struct Fanout{                 
-   PinOut out;
-   std::vector<PinIn> fan;
-} Fanout;
-
+typedef struct Seek{                
+   Coord start;
+   Coord end;
+   uint32_t net;
+} Seek;
 
 typedef struct Path{                
    Coord coord;
@@ -68,6 +48,7 @@ class Pcb{
       bool In(Path const f, std::vector<Path> const l); 
       Schematic * schematic;
       Place * places;
+      std::vector<Seek> seeks;
       bool debug;
       uint32_t size;
       int32_t top[MAX_SIZE][MAX_SIZE];  

@@ -9,9 +9,11 @@ int main(int argc, char** argv, char** env) {
  
    std::string path = argv[1]; 
    Schematic sch(path);
+   sch.Print();
    Place place(sch);      
    place.PrintList();
-   Pcb pcb(&sch, &place, true); 
+   Pcb pcb(&sch, &place, false); 
+   place.PrintGrid();
    pcb.Print();
    return 0;
 }
