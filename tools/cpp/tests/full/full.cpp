@@ -15,6 +15,8 @@ int main(int argc, char** argv, char** env) {
    Pcb pcb(&sch, &place, false); 
    place.PrintGrid();
    pcb.Print();
+   printf("%d/%d\n",pcb.NumRouted(),pcb.NumNets());
+   printf("%d\n",pcb.NumCopper());
    return 0;
 }
 
