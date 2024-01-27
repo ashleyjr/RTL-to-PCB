@@ -41,6 +41,16 @@ uint8_t Place::GetSize(void){
    return sqr;
 }
 
+const std::vector<Coord> Place::GetNonDecap(void){
+   std::vector<Coord> s;
+   for (auto const& p : places) {   
+      if(!p.decap){
+         s.push_back(p.pos); 
+      }
+   }
+   return s;
+}
+
 const std::vector<Placed> Place::GetPlacedSrcs(void){
    std::vector<Placed> s;
    for (auto const& p : places) {   

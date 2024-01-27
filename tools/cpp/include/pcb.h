@@ -5,22 +5,19 @@
 #include "coords.h"
 #include "place.h"
 
-#define MAX_SIZE 100
+#define MAX_SIZE 200
 
-#define CELL_SIZE 10
+#define PCB_SCALE 12
+#define CELL_SCALE_X 12
+#define CELL_SCALE_Y 11
 
 #define KO_TOP_OFFSET 3
-#define KO_TOP_PITCH  10
+#define KO_TOP_PITCH  11
 #define KO_TOP_WIDTH  6
 
-#define KO_BOT_ODD_OFFSET 3
-#define KO_BOT_ODD_PITCH  10
-#define KO_BOT_ODD_WIDTH  2
-
-#define KO_BOT_EVEN_OFFSET 10
-#define KO_BOT_EVEN_PITCH  10
-#define KO_BOT_EVEN_WIDTH  2
-
+#define KO_BOT_OFFSET 3
+#define KO_BOT_PITCH  12
+#define KO_BOT_WIDTH  6
 
 typedef struct Seek{                
    Coord start;

@@ -18,7 +18,7 @@ Pcb::Pcb(Schematic * s, Place * p, bool d){
    schematic = s;
    places = p;
    debug = d;
-   size = (places->GetSize() * CELL_SIZE) + 4; 
+   size = (places->GetSize() * PCB_SCALE); 
    // Init layers
    for(uint32_t x=0;x<size;x++){
       for(uint32_t y=0;y<size;y++){
@@ -32,17 +32,17 @@ Pcb::Pcb(Schematic * s, Place * p, bool d){
    // Create start and ends to seek
    for (auto const& src : places->GetPlacedSrcs()){    
       Coord start = src.pos;
-      start.x *= CELL_SIZE;
-      start.y *= CELL_SIZE;           
-      start.x += 10;
+      start.x *= CELL_SCALE_X;
+      start.y *= CELL_SCALE_Y;           
+      start.x += 7;
       start.y += 9;
       for (auto const& sink : places->GetPlacedSinksAC(src)){     
          Seek s;
          s.start = start;
          s.end = sink.pos;
-         s.end.x *= CELL_SIZE; 
-         s.end.x += 6;
-         s.end.y *= CELL_SIZE;
+         s.end.x *= CELL_SCALE_X; 
+         s.end.x += 2;
+         s.end.y *= CELL_SCALE_Y;
          s.end.y += 2;
          s.net = src.cell.net_y_q;
          seeks.push_back(s);
@@ -51,9 +51,9 @@ Pcb::Pcb(Schematic * s, Place * p, bool d){
          Seek s;
          s.start = start;
          s.end = sink.pos;
-         s.end.x *= CELL_SIZE; 
-         s.end.x += 6;
-         s.end.y *= CELL_SIZE;
+         s.end.x *= CELL_SCALE_X; 
+         s.end.x += 2;
+         s.end.y *= CELL_SCALE_Y;
          s.end.y += 9;
          s.net = src.cell.net_y_q;
          seeks.push_back(s); 
@@ -64,7 +64,7 @@ Pcb::Pcb(Schematic * s, Place * p, bool d){
       top[seek.start.x][seek.start.y] = seek.net;
       top[seek.end.x][seek.end.y] = seek.net;
    } 
-   // Top keepout region
+   // Top keepout region are horizontal strips
    for(uint32_t x=0;x<size;x++){
       for(uint32_t y=KO_TOP_OFFSET;y<size;y+=KO_TOP_PITCH){ 
          for(uint32_t w=0;w<KO_TOP_WIDTH;w++){ 
@@ -72,18 +72,17 @@ Pcb::Pcb(Schematic * s, Place * p, bool d){
          }
       }
    }
-   //// Bottom keepout region
-   for(uint32_t x=KO_BOT_ODD_OFFSET;x<size;x+=KO_BOT_ODD_PITCH){
-      for(uint32_t y=0;y<size;y++){ 
-         for(uint32_t w=0;w<KO_BOT_ODD_WIDTH;w++){ 
-            bot_ko[x+w][y] = 1;
-         }
-      }
-   }
-   for(uint32_t x=KO_BOT_EVEN_OFFSET;x<size;x+=KO_BOT_EVEN_PITCH){
-      for(uint32_t y=0;y<size;y++){ 
-         for(uint32_t w=0;w<KO_BOT_EVEN_WIDTH;w++){ 
-            bot_ko[x+w][y] = 1;
+   // Bottom keepout region appear under all but DECAP cells
+   for (auto const& c : places->GetNonDecap()) {   
+      Coord start;
+      Coord end;
+      start.x = (c.x * CELL_SCALE_X) + 2;
+      start.y = (c.y * CELL_SCALE_Y) + 3;
+      end.x = start.x + KO_BOT_WIDTH;
+      end.y = start.y + KO_TOP_WIDTH; 
+      for(uint32_t x=start.x;x<end.x;x++){
+         for(uint32_t y=start.y;y<end.y;y++){
+            bot_ko[x][y] = 1;
          }
       }
    }
@@ -366,6 +365,9 @@ void Pcb::Print(void){
             case 0x20: printf("S"); break; 
             case 0x40: printf("E"); break;
             // These should all be impossible
+            case 0x09:
+            case 0x0e:
+            case 0x0f:
             case 0x12:
             case 0x13:
             case 0x17:
