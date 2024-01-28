@@ -36,7 +36,9 @@ class Pcb{
    public:
       /*   size: The number of cells on the PCB
        */
-      Pcb(Schematic * s, Place * p, bool d);
+      Pcb(Schematic * s, bool d);
+      void Route(Place * p);
+
       /*   c: Array of coordinates
        *   l: Number of points in array
        */
@@ -44,9 +46,9 @@ class Pcb{
       uint32_t NumRouted(void);
       uint32_t NumNets(void);
       uint32_t NumCopper(void);
+      void Dump(std::string path);
       void Print(void); 
    private: 
-      uint32_t Route(Coord const s, Coord const e);
       void Ripup(uint32_t const net);
       bool KoFree(Path const p);
       bool CopperOk(Path const p, int32_t net);

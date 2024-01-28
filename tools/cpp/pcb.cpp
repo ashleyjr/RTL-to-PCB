@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <fstream>
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -14,10 +15,15 @@ bool operator==(const Path& l, const Path& r){
    return ((l.coord == r.coord) && (l.top_n_bottom == r.top_n_bottom)); 
 }
 
-Pcb::Pcb(Schematic * s, Place * p, bool d){   
+Pcb::Pcb(Schematic * s, bool d){   
    schematic = s;
-   places = p;
    debug = d;
+}
+   
+void Pcb::Route(Place * p){   
+   places = p;
+   seeks.clear();
+   oks.clear();
    size = (places->GetSize() * PCB_SCALE); 
    // Init layers
    for(uint32_t x=0;x<size;x++){
@@ -118,13 +124,13 @@ bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){
    // Route each pair
    // - TODO: Could change order of pairs for shorter
    //         distances 
-   printf("Routing net %d Start (%d,%d) End (%d,%d)\n",
-      net,
-      start.x,
-      start.y,
-      end.x,
-      end.y
-   ); 
+   //printf("Routing net %d Start (%d,%d) End (%d,%d)\n",
+   //   net,
+   //   start.x,
+   //   start.y,
+   //   end.x,
+   //   end.y
+   //); 
    Coord s;
    Coord e; 
    s = start;
@@ -283,7 +289,7 @@ bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){
 
 uint32_t Pcb::NumRouted(void){
    uint32_t i=0;
-   for (auto const& ok : oks){    
+   for (auto  ok : oks){    
       if(ok) i++;
    }
    return i;
@@ -328,6 +334,49 @@ void Pcb::Ripup(uint32_t net){
    }
 }
 
+void Pcb::Dump(std::string path){ 
+   std::ofstream TopFile(path+".top");
+   for(uint32_t y=0;y<size;y++){
+      std::string xline = "";
+      for(uint32_t x=0;x<size;x++){ 
+         if(top[x][y] == -1){
+            xline += "0";
+         }else{
+            xline += "1";
+         }
+      }
+      TopFile << xline << "\n";
+   }
+   TopFile.close();
+
+   std::ofstream ViaFile(path+".via");
+   for(uint32_t y=0;y<size;y++){
+      std::string xline = "";
+      for(uint32_t x=0;x<size;x++){ 
+         if(via[x][y] == -1){
+            xline += "0";
+         }else{
+            xline += "1";
+         }
+      }
+      ViaFile << xline << "\n";
+   }
+   ViaFile.close();
+
+   std::ofstream BotFile(path+".bot");
+   for(uint32_t y=0;y<size;y++){
+      std::string xline = "";
+      for(uint32_t x=0;x<size;x++){ 
+         if(bot[x][y] == -1){
+            xline += "0";
+         }else{
+            xline += "1";
+         }
+      }
+      BotFile << xline << "\n";
+   }
+   BotFile.close();
+}
 
 void Pcb::Print(void){ 
    for(uint32_t y=0;y<size;y++){

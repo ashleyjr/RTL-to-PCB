@@ -7,7 +7,7 @@
 #include "include/schematic.h"   
 #include "include/place.h"   
 
-Place::Place(Schematic s){      
+Place::Place(Schematic s, uint32_t extra_decap){      
    // Copy cells over from schematic
    for (auto const& c : s.GetCells()) {   
       Placed p;
@@ -17,6 +17,7 @@ Place::Place(Schematic s){
    }
    // Find minimum square size
    sqr = std::ceil(sqrt(places.size()));
+   sqr += extra_decap;
    // Square off with decap spaces
    for(uint32_t i=places.size();i<(sqr*sqr);i++){
       Placed p;
@@ -35,6 +36,31 @@ Place::Place(Schematic s){
          y++;
       }
    }
+}
+
+void Place::Randomise(float pairs){   
+   
+   swap_a.clear();
+   swap_b.clear();
+   
+   uint32_t swaps = (uint32_t)(pairs * ((sqr*sqr)/2)); 
+   for(uint32_t i=0;i<swaps;i++){   
+      swap_a.push_back(rand() % places.size()); 
+      swap_b.push_back(rand() % places.size()); 
+      Coord temp = places[swap_a[i]].pos;
+      places[swap_a[i]].pos = places[swap_b[i]].pos;
+      places[swap_b[i]].pos = temp;
+   }
+      
+}
+
+void Place::UndoRandomise(void){     
+   for(uint32_t i=swap_a.size()-1;i>0;i--){   
+      Coord temp = places[swap_a[i]].pos;
+      places[swap_a[i]].pos = places[swap_b[i]].pos;
+      places[swap_b[i]].pos = temp;
+   }
+      
 }
 
 uint8_t Place::GetSize(void){
