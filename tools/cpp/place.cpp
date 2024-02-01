@@ -118,6 +118,29 @@ const std::vector<Placed> Place::GetPlacedSinksBQ(const Placed src){
    return s;
 }
 
+void Place::Dump(std::string path){ 
+   std::ofstream File(path);
+   for(uint32_t y=0;y<sqr;y++){
+      std::string xline = "";
+      for(uint32_t x=0;x<sqr;x++){ 
+         for (auto const p : places){ 
+            if((p.pos.x == x) && (p.pos.y == y)){
+               if(!p.decap){
+                  xline += p.cell.name; 
+               }
+            }
+         } 
+         if(x != (sqr-1)){
+            xline += ",";
+         }
+      }
+      if(y != (sqr-1)){
+         xline += "\n";
+      }
+      File << xline;
+   }
+   File.close();
+}
 void Place::PrintList(void){
    for (auto const& p : places) {   
       if(p.decap){

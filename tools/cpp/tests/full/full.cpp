@@ -13,10 +13,12 @@ int main(int argc, char** argv, char** env) {
    Place p(sch, 0);       
    p.PrintList(); 
    Pcb pcb(&sch, false);  
-   p.PrintGrid();
-   pcb.Route(&p);  
+   p.PrintGrid(); 
+   pcb.Route(&p);   
    uint32_t r = pcb.NumRouted();
    uint32_t t = pcb.NumNets();
+   printf("nets=(%d/%d)\n",r,t);
+
    if(t == r){
       r--;
    }
@@ -25,7 +27,7 @@ int main(int argc, char** argv, char** env) {
    uint32_t l;
    uint32_t l_last = 0;
    printf("Routing:\n");
-   for(uint32_t i=0;i<100;i++){ 
+   for(uint32_t i=0;i<10;i++){ 
       printf("%d/100\n",i); 
       pcb.Route(&p);  
       n = pcb.NumRouted();
@@ -49,10 +51,15 @@ int main(int argc, char** argv, char** env) {
          }
       } 
    }
+   pcb.Route(&p);
    pcb.Print();
-   
+   p.PrintGrid();
+
    path = argv[2];
    pcb.Dump(path);
+   path = argv[3];
+   p.Dump(path);
+
    return 0;
 }
 

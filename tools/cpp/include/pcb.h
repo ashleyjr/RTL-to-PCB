@@ -7,17 +7,17 @@
 
 #define MAX_SIZE 200
 
-#define PCB_SCALE 12
-#define CELL_SCALE_X 12
-#define CELL_SCALE_Y 11
+#define PCB_SCALE 15
+#define CELL_SCALE_X 15
+#define CELL_SCALE_Y 15
 
-#define KO_TOP_OFFSET 3
-#define KO_TOP_PITCH  11
+#define KO_TOP_OFFSET 5
+#define KO_TOP_PITCH  15
 #define KO_TOP_WIDTH  6
 
 #define KO_BOT_OFFSET 3
 #define KO_BOT_PITCH  12
-#define KO_BOT_WIDTH  6
+#define KO_BOT_WIDTH  4
 
 typedef struct Seek{                
    Coord start;

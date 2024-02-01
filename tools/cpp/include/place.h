@@ -23,6 +23,7 @@ class Place{
       const std::vector<Placed> GetPlacedSrcs(void);
       const std::vector<Placed> GetPlacedSinksAC(const Placed src);
       const std::vector<Placed> GetPlacedSinksBQ(const Placed src);  
+      void Dump(std::string path);
       void PrintList(void);
       void PrintGrid(void);
    private:

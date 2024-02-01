@@ -40,16 +40,16 @@ void Pcb::Route(Place * p){
       Coord start = src.pos;
       start.x *= CELL_SCALE_X;
       start.y *= CELL_SCALE_Y;           
-      start.x += 7;
-      start.y += 9;
+      start.x += 6;
+      start.y += 11;
       for (auto const& sink : places->GetPlacedSinksAC(src)){     
          Seek s;
          s.start = start;
          s.end = sink.pos;
          s.end.x *= CELL_SCALE_X; 
-         s.end.x += 2;
+         s.end.x += 3;
          s.end.y *= CELL_SCALE_Y;
-         s.end.y += 2;
+         s.end.y += 4;
          s.net = src.cell.net_y_q;
          seeks.push_back(s);
       }
@@ -58,17 +58,17 @@ void Pcb::Route(Place * p){
          s.start = start;
          s.end = sink.pos;
          s.end.x *= CELL_SCALE_X; 
-         s.end.x += 2;
+         s.end.x += 6;
          s.end.y *= CELL_SCALE_Y;
-         s.end.y += 9;
+         s.end.y += 4;
          s.net = src.cell.net_y_q;
          seeks.push_back(s); 
       }
    }
    // Reserve start/ends
    for(auto const& seek  : seeks){
-      top[seek.start.x][seek.start.y] = seek.net;
-      top[seek.end.x][seek.end.y] = seek.net;
+      bot[seek.start.x][seek.start.y] = seek.net;
+      bot[seek.end.x][seek.end.y] = seek.net;
    } 
    // Top keepout region are horizontal strips
    for(uint32_t x=0;x<size;x++){
@@ -82,8 +82,8 @@ void Pcb::Route(Place * p){
    for (auto const& c : places->GetNonDecap()) {   
       Coord start;
       Coord end;
-      start.x = (c.x * CELL_SCALE_X) + 2;
-      start.y = (c.y * CELL_SCALE_Y) + 3;
+      start.x = (c.x * CELL_SCALE_X) + KO_BOT_OFFSET ;
+      start.y = (c.y * CELL_SCALE_Y) + KO_TOP_OFFSET;
       end.x = start.x + KO_BOT_WIDTH;
       end.y = start.y + KO_TOP_WIDTH; 
       for(uint32_t x=start.x;x<end.x;x++){
@@ -139,7 +139,7 @@ bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){
    bool done = false;
    for(uint32_t t=0;t<100;t++) {
       std::vector<Path> path; 
-      path.push_back({.coord = s, .top_n_bottom = true});
+      path.push_back({.coord = s, .top_n_bottom = false});
       while (!done) { 
          std::vector<Path> options;
          bool n_edge = (path.back().coord.y) == 0;
@@ -256,21 +256,21 @@ bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){
          path.push_back(p);
          
          // Special case if there but on the wrong side
-         if((path.back().coord == e) && (path.back().top_n_bottom == false)){
+         if((path.back().coord == e) && (path.back().top_n_bottom == true)){
             Path s;
             s.coord = path.back().coord;
             s.top_n_bottom = true;
             path.push_back(s);
          }
 
-         done = (path.back().coord == e) && (path.back().top_n_bottom == true);  
+         done = (path.back().coord == e) && (path.back().top_n_bottom == false);  
       }
       // Update the copper
       if(done){
          Path last;
          last.coord.x = 0;
          last.coord.y = 0;
-         last.top_n_bottom = true;  
+         last.top_n_bottom = false;  
          for (auto const& p : path) {   
             if(p.top_n_bottom != last.top_n_bottom){
                via[last.coord.x][last.coord.y] = 1; 
@@ -335,47 +335,25 @@ void Pcb::Ripup(uint32_t net){
 }
 
 void Pcb::Dump(std::string path){ 
-   std::ofstream TopFile(path+".top");
+   std::ofstream File(path);
    for(uint32_t y=0;y<size;y++){
       std::string xline = "";
       for(uint32_t x=0;x<size;x++){ 
-         if(top[x][y] == -1){
-            xline += "0";
-         }else{
-            xline += "1";
+         xline += std::to_string(top[x][y]);
+         xline += ":";
+         xline += std::to_string(via[x][y]);
+         xline += ":";
+         xline += std::to_string(bot[x][y]); 
+         if(x != (size-1)){
+            xline += ",";
          }
       }
-      TopFile << xline << "\n";
-   }
-   TopFile.close();
-
-   std::ofstream ViaFile(path+".via");
-   for(uint32_t y=0;y<size;y++){
-      std::string xline = "";
-      for(uint32_t x=0;x<size;x++){ 
-         if(via[x][y] == -1){
-            xline += "0";
-         }else{
-            xline += "1";
-         }
+      if(y != (size-1)){
+         xline += "\n";
       }
-      ViaFile << xline << "\n";
+      File << xline;
    }
-   ViaFile.close();
-
-   std::ofstream BotFile(path+".bot");
-   for(uint32_t y=0;y<size;y++){
-      std::string xline = "";
-      for(uint32_t x=0;x<size;x++){ 
-         if(bot[x][y] == -1){
-            xline += "0";
-         }else{
-            xline += "1";
-         }
-      }
-      BotFile << xline << "\n";
-   }
-   BotFile.close();
+   File.close();
 }
 
 void Pcb::Print(void){ 
