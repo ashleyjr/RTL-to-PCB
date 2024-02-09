@@ -15,16 +15,19 @@ bool operator==(const Path& l, const Path& r){
    return ((l.coord == r.coord) && (l.top_n_bottom == r.top_n_bottom)); 
 }
 
-Pcb::Pcb(Schematic * s, bool d){   
+Pcb::Pcb(Schematic * s, bool d, std::string p){   
    schematic = s;
    debug = d;
+   if(debug){
+      debug_file.open(p);
+   }
 }
-   
-void Pcb::Route(Place * p){   
-   places = p;
-   seeks.clear();
-   oks.clear();
-   size = (places->GetSize() * PCB_SCALE); 
+
+Pcb::~Pcb(void){
+   debug_file.close();
+}
+  
+void Pcb::Init(){
    // Init layers
    for(uint32_t x=0;x<size;x++){
       for(uint32_t y=0;y<size;y++){
@@ -42,7 +45,7 @@ void Pcb::Route(Place * p){
       start.y *= CELL_SCALE_Y;           
       start.x += 6;
       start.y += 11;
-      for (auto const& sink : places->GetPlacedSinksAC(src)){     
+      for (auto const& sink : places->GetPlacedSinksAD(src)){     
          Seek s;
          s.start = start;
          s.end = sink.pos;
@@ -53,7 +56,7 @@ void Pcb::Route(Place * p){
          s.net = src.cell.net_y_q;
          seeks.push_back(s);
       }
-      for (auto const& sink : places->GetPlacedSinksBQ(src)){    
+      for (auto const& sink : places->GetPlacedSinksBC(src)){    
          Seek s;
          s.start = start;
          s.end = sink.pos;
@@ -92,11 +95,52 @@ void Pcb::Route(Place * p){
          }
       }
    }
+}
+void Pcb::Route(Place * p){   
+   places = p;
+   seeks.clear();
+   oks.clear();
+   size = (places->GetSize() * PCB_SCALE); 
+   Init();  
+   // Sort the seek distances
+   std::vector<Seek> temp;
+   uint32_t stop = seeks.size();
+   for(uint32_t i=0;i<stop;i++){
+      uint32_t min_idx = 0;
+      uint32_t min = Manhattan(seeks[0].start,seeks[0].end);
+      for(uint32_t j=1;j<seeks.size();j++){
+         if(Manhattan(seeks[j].start,seeks[j].end) < min){
+            min_idx = j;
+            min = Manhattan(seeks[j].start,seeks[j].end);
+         }
+      }
+      temp.push_back(seeks[min_idx]);
+      seeks.erase(seeks.begin() + min_idx);
+   }
+   seeks = temp;
+
    // Route
-   for(auto const& seek  : seeks){
-      bool ok;
-      ok = AddTrace(seek.start,seek.end,seek.net);
-      oks.push_back(ok);
+   // - If a path cannot be routed, try them all again but pu hard one first
+   bool done = false;
+   while(!done){
+      done = true;
+      for(uint32_t i=0;i<seeks.size();i++){
+         bool ok;
+         ok = AddTrace(seeks[i].start,seeks[i].end,seeks[i].net);
+         oks.push_back(ok);
+         if(!ok){
+            Seek hard;
+            hard = seeks[i];
+            seeks.erase(seeks.begin() + i);
+            seeks.insert(seeks.begin(), hard); 
+            done = false;
+            printf("nets=(%d/%d)\n",NumRouted(),NumNets());
+            oks.clear();
+            printf("%d\n",i);
+            Init();
+            break;
+         }
+      }
    }
 }
 
@@ -120,17 +164,7 @@ bool Pcb::In(Path const f, std::vector<Path> const l){
    return (std::find(l.begin(), l.end(), f) != l.end());
 }
 
-bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){ 
-   // Route each pair
-   // - TODO: Could change order of pairs for shorter
-   //         distances 
-   //printf("Routing net %d Start (%d,%d) End (%d,%d)\n",
-   //   net,
-   //   start.x,
-   //   start.y,
-   //   end.x,
-   //   end.y
-   //); 
+bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){  
    Coord s;
    Coord e; 
    s = start;
@@ -141,6 +175,23 @@ bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){
       std::vector<Path> path; 
       path.push_back({.coord = s, .top_n_bottom = false});
       while (!done) { 
+         // Debug the route
+         if(debug){
+            std::string add;
+            if(path.back().top_n_bottom){
+               add += "+t(";
+            }else{
+               add += "+b(";
+            }
+            add += std::to_string(path.back().coord.x);
+            add += ",";
+            add += std::to_string(path.back().coord.y);
+            add += ")[";
+            add += std::to_string(net);
+            add += "]\n";
+            debug_file << add;
+         }
+
          std::vector<Path> options;
          bool n_edge = (path.back().coord.y) == 0;
          bool e_edge = (path.back().coord.x) == size-1;
@@ -216,21 +267,26 @@ bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){
                   }
                }
             }
-         } 
-        
-         // Print the route
-         if(debug){
-            printf("(%d,%d),",path.back().coord.x,path.back().coord.y);
-            for (auto const& opt : options) {   
-               printf("(%d,%d),",opt.coord.x,opt.coord.y);
-            }
-            printf("\n");
-         }
+         }  
 
          // If nowhere to go
          if(options.size() == 0){
             if(debug){
-               printf("Failed to route");
+               for (auto const p : path){    
+                  std::string add;
+                  if(p.top_n_bottom){
+                     add += "-t(";
+                  }else{
+                     add += "-b(";
+                  }
+                  add += std::to_string(p.coord.x);
+                  add += ",";
+                  add += std::to_string(p.coord.y);
+                  add += ")[";
+                  add += std::to_string(net);
+                  add += "]\n";
+                  debug_file << add;
+               }
             }
             avoid.push_back(path.back());
             break;
@@ -238,15 +294,15 @@ bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){
 
          // Find the distance from each option
          // - Add 1 for each via
-         std::vector<uint32_t> dists; 
+         std::vector<float> dists; 
          for (auto const& opt : options) {    
-            uint32_t d = Distance(e,opt.coord);
+            uint32_t d = Manhattan(e,opt.coord);
             if(path.back().top_n_bottom != opt.top_n_bottom){
                d++;
             }
             dists.push_back(d); 
          }          
-         std::vector<uint32_t>::iterator m = std::min_element(dists.begin(), dists.end()); 
+         std::vector<float>::iterator m = std::min_element(dists.begin(), dists.end()); 
          Path p = options[std::distance(dists.begin(), m)]; 
          if(path.back().top_n_bottom != p.top_n_bottom) { 
             Path v = path.back();
@@ -259,7 +315,7 @@ bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){
          if((path.back().coord == e) && (path.back().top_n_bottom == true)){
             Path s;
             s.coord = path.back().coord;
-            s.top_n_bottom = true;
+            s.top_n_bottom = false;
             path.push_back(s);
          }
 

@@ -8,6 +8,7 @@ typedef struct Coord{
 
 bool operator!=(const Coord& l, const Coord& r);
 bool operator==(const Coord& l, const Coord& r);
-uint32_t Distance(const Coord& s, const Coord& e);
+float Euclidean(const Coord& s, const Coord& e);
+uint32_t Manhattan(const Coord& s, const Coord& e);
 
 #endif

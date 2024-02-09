@@ -89,13 +89,13 @@ const std::vector<Placed> Place::GetPlacedSrcs(void){
    return s;
 }
 
-const std::vector<Placed> Place::GetPlacedSinksAC(const Placed src){
+const std::vector<Placed> Place::GetPlacedSinksAD(const Placed src){
    std::vector<Placed> s;
    for (auto const& p : places) {   
       if(((p.cell.type ==  CellType::DFF) || 
           (p.cell.type ==  CellType::NOR) || 
           (p.cell.type ==  CellType::OUT)) &&  
-          (src.cell.net_y_q == p.cell.net_a_c) && 
+          (src.cell.net_y_q == p.cell.net_a_d) && 
           (!p.decap)){
          s.push_back(p); 
       }
@@ -104,12 +104,12 @@ const std::vector<Placed> Place::GetPlacedSinksAC(const Placed src){
    return s;
 }
 
-const std::vector<Placed> Place::GetPlacedSinksBQ(const Placed src){
+const std::vector<Placed> Place::GetPlacedSinksBC(const Placed src){
    std::vector<Placed> s;
    for (auto const& p : places) {   
       if(((p.cell.type ==  CellType::DFF) || 
           (p.cell.type ==  CellType::NOR)) &&  
-          (src.cell.net_y_q == p.cell.net_b_d) && 
+          (src.cell.net_y_q == p.cell.net_b_c) && 
           (!p.decap)){
          s.push_back(p); 
       }

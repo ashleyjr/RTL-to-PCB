@@ -13,8 +13,8 @@ enum class CellType {
 typedef struct Cell { 
    CellType type;
    std::string name;
-   uint32_t net_a_c;
-   uint32_t net_b_d;
+   uint32_t net_a_d;
+   uint32_t net_b_c;
    uint32_t net_y_q; 
 } Cell;
 

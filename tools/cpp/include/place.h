@@ -21,8 +21,8 @@ class Place{
       uint8_t GetSize(void);
       const std::vector<Coord> GetNonDecap(void);
       const std::vector<Placed> GetPlacedSrcs(void);
-      const std::vector<Placed> GetPlacedSinksAC(const Placed src);
-      const std::vector<Placed> GetPlacedSinksBQ(const Placed src);  
+      const std::vector<Placed> GetPlacedSinksAD(const Placed src);
+      const std::vector<Placed> GetPlacedSinksBC(const Placed src);  
       void Dump(std::string path);
       void PrintList(void);
       void PrintGrid(void);

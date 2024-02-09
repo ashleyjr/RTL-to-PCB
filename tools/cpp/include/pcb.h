@@ -2,6 +2,7 @@
 #define PCB_H
 
 #include <vector>
+#include <fstream>
 #include "coords.h"
 #include "place.h"
 
@@ -36,7 +37,8 @@ class Pcb{
    public:
       /*   size: The number of cells on the PCB
        */
-      Pcb(Schematic * s, bool d);
+      Pcb(Schematic * s, bool d, std::string path);
+      ~Pcb(void);
       void Route(Place * p);
 
       /*   c: Array of coordinates
@@ -49,6 +51,7 @@ class Pcb{
       void Dump(std::string path);
       void Print(void); 
    private: 
+      void Init(void);
       void Ripup(uint32_t const net);
       bool KoFree(Path const p);
       bool CopperOk(Path const p, int32_t net);
@@ -58,6 +61,7 @@ class Pcb{
       std::vector<Seek> seeks;
       std::vector<bool> oks;
       bool debug;
+      std::ofstream debug_file;
       uint32_t size;
       int32_t top[MAX_SIZE][MAX_SIZE];  
       int32_t via[MAX_SIZE][MAX_SIZE];  
