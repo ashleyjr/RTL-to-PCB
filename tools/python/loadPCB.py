@@ -1,5 +1,7 @@
 import pcbnew
 
+# RUN: exec(open("/Users/ashleyr/RTL-to-PCB/tools/python/loadPCB.py").read())
+
 def addVia(x, y):
     b = pcbnew.GetBoard()
     v = pcbnew.PCB_VIA(b)
@@ -20,7 +22,7 @@ def addTrace(sx, sy, ex, ey, top_n_bot=True, width=0.3):
         t.SetLayer(pcbnew.B_Cu)
     b.Add(t)
 
-with open('/Users/ashleyr/RTL-to-PCB/counter_4_bit.pcb', 'r+') as f:
+with open('/Users/ashleyr/RTL-to-PCB/shift_32_bit.pcb', 'r+') as f:
     pcb = f.read()
 
 lines = pcb.split('\n')
@@ -36,7 +38,6 @@ for y,line in enumerate(pcb.split('\n')):
     bot.append([])
     for x,pos in enumerate(line.split(",")):
         l = pos.split(":")
-        print(l)
         top[y].append(int(l[0]))
         via[y].append(int(l[1]))
         bot[y].append(int(l[2]))
@@ -57,7 +58,7 @@ for x in range(size):
             addVia(x,y)
 
 
-with open('/Users/ashleyr/RTL-to-PCB/counter_4_bit.place', 'r+') as f:
+with open('/Users/ashleyr/RTL-to-PCB/shift_32_bit.place', 'r+') as f:
     place = f.read()
 
 b = pcbnew.GetBoard()
@@ -110,13 +111,22 @@ for y,line in enumerate(place.split('\n')):
 
 
 
-for y in range(0,size,15):
-    # Horizontal
-    addTrace(0,y+5.2,size+3,y+5.2,True,1);
-    addTrace(-3,y+9.5,size,y+9.5,True,1);
+for y,line in enumerate(place.split('\n')):
+    start = -1
+    end = -1
+    for x,name in enumerate(line.split(",")):
+        if name != "":
+            if name[0] in ["D","N"]:
+                if start == -1:
+                    start = x
+                end = x
+    if end != -1:
+        # Horizontal
+        addTrace((start * 15)+4.2,(y*15)+5.2,size+3,(y*15)+5.2,True,1);
+        addTrace(-3,(y*15)+9.5,(end * 15)+2,(y*15)+9.5,True,1);
 # Vertical
-addTrace(-3,9.5,-3,y+9.5,True,1);
-addTrace(size+3,5.2,size+3,y+5.2,True,1);
+addTrace(-3,9.5,-3,(y*15)+9.5,True,1);
+addTrace(size+3,5.2,size+3,(y*15)+5.2,True,1);
 
 
 pcbnew.Refresh()
