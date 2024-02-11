@@ -198,12 +198,14 @@ def main():
     for cell in cells:
         if cell[0] != "P":
             f.write(f'\t\t\t(node (ref "{cell}") (pin "3") (pintype "power_in"))\n')
+            f.write(f'\t\t\t(node (ref "{cell}") (pin "7") (pintype "power_in"))\n')
     f.write("\t\t)\n")
 
     f.write(f'\t\t(net (code "{len(all_nets)+2}") (name "VCC")\n')
     for cell in cells:
         if cell[0] != "P":
             f.write(f'\t\t\t(node (ref "{cell}") (pin "5") (pintype "power_in"))\n')
+            f.write(f'\t\t\t(node (ref "{cell}") (pin "6") (pintype "power_in"))\n')
     f.write("\t\t)\n")
 
     f.write('\t)\n')
