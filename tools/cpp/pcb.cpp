@@ -102,6 +102,7 @@ void Pcb::Route(Place * p){
    oks.clear();
    size = (places->GetSize() * PCB_SCALE); 
    Init();  
+   Mst();
    // Sort the seek distances
    std::vector<Seek> temp;
    uint32_t stop = seeks.size();
@@ -162,6 +163,182 @@ bool Pcb::CopperOk(Path const p, int32_t net){
 
 bool Pcb::In(Path const f, std::vector<Path> const l){
    return (std::find(l.begin(), l.end(), f) != l.end());
+}
+
+// Turns the seeks in to a Minimum Spanning Tree
+void Pcb::Mst(){ 
+   std::vector<Seek> mst;
+   std::vector<uint32_t> nets;
+   // Find all nets
+   for (auto const seek : seeks){    
+      if(std::find(nets.begin(), nets.end(), seek.net) == nets.end()){
+         nets.push_back(seek.net);
+      } 
+   }
+   // Create a per net group MST
+   for (auto const net : nets){    
+      
+      // Create a list of nodes in a net group
+      std::vector<Coord> nodes;
+      for (auto const seek : seeks){   
+         if(seek.net == net){
+            if(std::find(nodes.begin(), nodes.end(), seek.start) == nodes.end()){
+               nodes.push_back(seek.start);
+            }
+            if(std::find(nodes.begin(), nodes.end(), seek.end) == nodes.end()){
+               nodes.push_back(seek.end);
+            } 
+         }
+      }
+     
+      // List of all possible vertices with distances
+      std::vector<Seek> net_seeks;
+      for(uint32_t a=0;a<nodes.size()-1;a++){
+         for(uint32_t b=a+1;b<nodes.size();b++){
+            Seek seek;
+            seek.start = nodes[a];
+            seek.end = nodes[b];
+            seek.net = net;
+            seek.dist = Manhattan(nodes[a],nodes[b]);
+            net_seeks.push_back(seek);
+         }
+      }
+    
+      // Sort vertices in order of distance
+      std::vector<Seek> sort;
+      uint32_t stop = net_seeks.size();
+      for(uint32_t i=0;i<stop;i++){
+         uint32_t min_idx = 0;
+         uint32_t min = net_seeks[0].dist;
+         for(uint32_t j=1;j<net_seeks.size();j++){
+            if(net_seeks[j].dist < min){
+               min_idx = j;
+               min = net_seeks[j].dist;
+            }
+         }
+         sort.push_back(net_seeks[min_idx]);
+         net_seeks.erase(net_seeks.begin() + min_idx);  
+      }
+     
+
+      for (auto const seek : sort){  
+         printf("%d: (%d,%d) (%d,%d) [%d]\n",net, seek.start.x,seek.start.y,seek.end.x,seek.end.y,seek.dist); 
+      }
+
+      
+      for (auto const n : nodes){ 
+         printf("(%d, %d)", n.x, n.y); 
+      }
+      printf("\n");
+
+      // Find shortest vertices that do not create a loop 
+      std::vector<Seek> net_mst;
+      for(uint32_t i=0;i<sort.size();i++){ 
+         
+         printf("%d:%d\n",net,i);
+         
+
+         // Check for loop 
+         bool loop = false; 
+         net_mst.push_back(sort[i]);
+   
+         for (auto const seek : net_mst){  
+            printf("net_mst: %d: (%d,%d) (%d,%d) [%d]\n",net, seek.start.x,seek.start.y,seek.end.x,seek.end.y,seek.dist); 
+         } 
+ 
+         // Testing must consider every node a route node once 
+         for (auto const n : nodes){ 
+ 
+            // Create a list of nodes not visited
+            std::vector<Search> searches;
+            for (auto const i : nodes){ 
+               Search s;
+               s.node = i;
+               s.found = false;
+               searches.push_back(s);
+            }        
+            
+            std::vector<Seek> tests = net_mst;
+            Coord ptr = n;
+            bool back_to_root = true;
+            bool done = false;
+            while(!done){ 
+               
+               printf("ptr: (%d,%d)\n",ptr.x,ptr.y); 
+
+               // Mark node as found 
+               for(uint32_t j=0;j<searches.size();j++){
+                  if(ptr == searches[j].node){
+                     searches[j].found = true;
+                     break;
+                  }
+               }
+              
+               // Find an edge to take 
+               // - If two back to roots happens then done even if unvisited nodes
+               bool found = false;
+               uint32_t rm;
+               for(rm=0;rm<tests.size();rm++){
+   
+                  if(tests[rm].start == ptr){  
+                     found = true;
+                     ptr = tests[rm].end;
+                     break;
+                  }
+                  
+                  if(tests[rm].end == ptr){
+                     found = true; 
+                     ptr = tests[rm].start;
+                     break;
+                  }
+               }
+               
+               if(!found){
+                  if(back_to_root){
+                     done = true;
+                  }else{
+                     back_to_root = true;
+                     ptr = n;
+                  }
+               }else{
+                  // Check node not already found (loop)
+                  if(tests.size() > 0){
+                     tests.erase(tests.begin() + rm);  
+                  }
+                  for(uint32_t j=0;j<searches.size();j++){
+                     if((ptr == searches[j].node) && (searches[j].found == true)){ 
+                        loop = true;
+                        done = true;
+                     }
+                  }
+               }
+
+               if(tests.size() == 0){
+                  done = true;
+               }
+            }
+            if(loop){
+               break;
+            }
+         }
+         if(loop){
+            net_mst.pop_back();
+         }
+      }
+
+      
+      for (auto const seek : net_mst){  
+         mst.push_back(seek); 
+         //printf("%d: (%d,%d) (%d,%d) [%d]\n",net, seek.start.x,seek.start.y,seek.end.x,seek.end.y,seek.dist); 
+      }
+   }
+   //for (auto const seek : mst){   
+   //   printf("%d: (%d,%d) (%d,%d) [%d]\n",seek.net, seek.start.x,seek.start.y,seek.end.x,seek.end.y,seek.dist); 
+   //}
+   //for (auto const seek : seeks){   
+   //   printf("%d: (%d,%d) (%d,%d) [%d]\n",seek.net, seek.start.x,seek.start.y,seek.end.x,seek.end.y,seek.dist); 
+   //}
+   seeks = mst;
 }
 
 bool Pcb::AddTrace(Coord const start, Coord const end, int32_t const net){  

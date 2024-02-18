@@ -24,12 +24,19 @@ typedef struct Seek{
    Coord start;
    Coord end;
    uint32_t net;
+   uint32_t dist;
 } Seek;
 
 typedef struct Path{                
    Coord coord;
    bool top_n_bottom;
 } Path;
+
+typedef struct Search{                
+   Coord node;
+   bool found;
+} Search;
+
 
 bool operator==(const Path& l, const Path& r);
 
@@ -56,6 +63,8 @@ class Pcb{
       bool KoFree(Path const p);
       bool CopperOk(Path const p, int32_t net);
       bool In(Path const f, std::vector<Path> const l); 
+      
+      void Mst(void);
       Schematic * schematic;
       Place * places;
       std::vector<Seek> seeks;
