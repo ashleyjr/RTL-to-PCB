@@ -98,11 +98,12 @@ void Pcb::Init(){
 }
 void Pcb::Route(Place * p){   
    places = p;
-   seeks.clear();
-   oks.clear();
+   seeks.clear(); 
    size = (places->GetSize() * PCB_SCALE); 
    Init();  
    Mst();
+   
+
    // Sort the seek distances
    std::vector<Seek> temp;
    uint32_t stop = seeks.size();
@@ -120,29 +121,31 @@ void Pcb::Route(Place * p){
    }
    seeks = temp;
 
+   
    // Route
    // - If a path cannot be routed, try them all again but pu hard one first
-   bool done = false;
-   while(!done){
-      done = true;
+   //bool done = false;
+   //while(!done){
+   //   done = true;
+      oks.clear();
       for(uint32_t i=0;i<seeks.size();i++){
          bool ok;
          ok = AddTrace(seeks[i].start,seeks[i].end,seeks[i].net);
          oks.push_back(ok);
-         if(!ok){
-            Seek hard;
-            hard = seeks[i];
-            seeks.erase(seeks.begin() + i);
-            seeks.insert(seeks.begin(), hard); 
-            done = false;
-            printf("nets=(%d/%d)\n",NumRouted(),NumNets());
-            oks.clear();
-            printf("%d\n",i);
-            Init();
-            break;
-         }
+         //if(!ok){
+         //   Seek hard;
+         //   hard = seeks[i];
+         //   seeks.erase(seeks.begin() + i);
+         //   seeks.insert(seeks.begin(), hard); 
+         //   done = false;
+         //   printf("nets=(%d/%d)\n",NumRouted(),NumNets());
+         //   oks.clear();
+         //   printf("%d\n",i);
+         //   Init();
+         //   break;
+         //}
       }
-   }
+   //}
 }
 
 bool Pcb::KoFree(Path const p){
@@ -219,36 +222,15 @@ void Pcb::Mst(){
          sort.push_back(net_seeks[min_idx]);
          net_seeks.erase(net_seeks.begin() + min_idx);  
       }
-     
-
-      for (auto const seek : sort){  
-         printf("%d: (%d,%d) (%d,%d) [%d]\n",net, seek.start.x,seek.start.y,seek.end.x,seek.end.y,seek.dist); 
-      }
-
       
-      for (auto const n : nodes){ 
-         printf("(%d, %d)", n.x, n.y); 
-      }
-      printf("\n");
-
       // Find shortest vertices that do not create a loop 
       std::vector<Seek> net_mst;
       for(uint32_t i=0;i<sort.size();i++){ 
-         
-         printf("%d:%d\n",net,i);
-         
-
          // Check for loop 
          bool loop = false; 
          net_mst.push_back(sort[i]);
-   
-         for (auto const seek : net_mst){  
-            printf("net_mst: %d: (%d,%d) (%d,%d) [%d]\n",net, seek.start.x,seek.start.y,seek.end.x,seek.end.y,seek.dist); 
-         } 
- 
          // Testing must consider every node a route node once 
          for (auto const n : nodes){ 
- 
             // Create a list of nodes not visited
             std::vector<Search> searches;
             for (auto const i : nodes){ 
@@ -257,15 +239,12 @@ void Pcb::Mst(){
                s.found = false;
                searches.push_back(s);
             }        
-            
+            // Test all edges
             std::vector<Seek> tests = net_mst;
             Coord ptr = n;
             bool back_to_root = true;
             bool done = false;
             while(!done){ 
-               
-               printf("ptr: (%d,%d)\n",ptr.x,ptr.y); 
-
                // Mark node as found 
                for(uint32_t j=0;j<searches.size();j++){
                   if(ptr == searches[j].node){
@@ -273,26 +252,22 @@ void Pcb::Mst(){
                      break;
                   }
                }
-              
                // Find an edge to take 
                // - If two back to roots happens then done even if unvisited nodes
                bool found = false;
                uint32_t rm;
                for(rm=0;rm<tests.size();rm++){
-   
                   if(tests[rm].start == ptr){  
                      found = true;
                      ptr = tests[rm].end;
                      break;
-                  }
-                  
+                  }   
                   if(tests[rm].end == ptr){
                      found = true; 
                      ptr = tests[rm].start;
                      break;
                   }
                }
-               
                if(!found){
                   if(back_to_root){
                      done = true;
@@ -312,7 +287,6 @@ void Pcb::Mst(){
                      }
                   }
                }
-
                if(tests.size() == 0){
                   done = true;
                }
@@ -329,15 +303,8 @@ void Pcb::Mst(){
       
       for (auto const seek : net_mst){  
          mst.push_back(seek); 
-         //printf("%d: (%d,%d) (%d,%d) [%d]\n",net, seek.start.x,seek.start.y,seek.end.x,seek.end.y,seek.dist); 
       }
    }
-   //for (auto const seek : mst){   
-   //   printf("%d: (%d,%d) (%d,%d) [%d]\n",seek.net, seek.start.x,seek.start.y,seek.end.x,seek.end.y,seek.dist); 
-   //}
-   //for (auto const seek : seeks){   
-   //   printf("%d: (%d,%d) (%d,%d) [%d]\n",seek.net, seek.start.x,seek.start.y,seek.end.x,seek.end.y,seek.dist); 
-   //}
    seeks = mst;
 }
 
@@ -528,12 +495,8 @@ uint32_t Pcb::NumRouted(void){
    return i;
 }
 
-uint32_t Pcb::NumNets(void){
-   uint32_t i=0;
-   for (auto const& ok : oks){    
-      i++;
-   }
-   return i;
+uint32_t Pcb::NumNets(void){ 
+   return seeks.size();
 }
 
 uint32_t Pcb::NumCopper(void){
