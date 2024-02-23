@@ -102,8 +102,6 @@ void Pcb::Route(Place * p){
    size = (places->GetSize() * PCB_SCALE); 
    Init();  
    Mst();
-   
-
    // Sort the seek distances
    std::vector<Seek> temp;
    uint32_t stop = seeks.size();
@@ -168,36 +166,35 @@ bool Pcb::In(Path const f, std::vector<Path> const l){
    return (std::find(l.begin(), l.end(), f) != l.end());
 }
 
+
+bool lt_dist (Seek i, Seek j) { return (i.dist<j.dist); }
+
 // Turns the seeks in to a Minimum Spanning Tree
 void Pcb::Mst(){ 
    std::vector<Seek> mst;
-   std::vector<uint32_t> nets;
-   // Find all nets
-   for (auto const seek : seeks){    
-      if(std::find(nets.begin(), nets.end(), seek.net) == nets.end()){
-         nets.push_back(seek.net);
-      } 
-   }
+ 
    // Create a per net group MST
-   for (auto const net : nets){    
+   for (auto const net : schematic->GetNets()){       
       
       // Create a list of nodes in a net group
       std::vector<Coord> nodes;
       for (auto const seek : seeks){   
          if(seek.net == net){
-            if(std::find(nodes.begin(), nodes.end(), seek.start) == nodes.end()){
-               nodes.push_back(seek.start);
+            bool found_start = false;
+            bool found_end   = false;
+            for (auto const n : nodes){
+               if((seek.start.x == n.x) && (seek.start.y == n.y)) found_start = true;
+               if((seek.end.x == n.x)   && (seek.end.y == n.y))   found_end  = true;
             }
-            if(std::find(nodes.begin(), nodes.end(), seek.end) == nodes.end()){
-               nodes.push_back(seek.end);
-            } 
+            if(!found_start)  nodes.push_back(seek.start);
+            if(!found_end)    nodes.push_back(seek.end);
          }
       }
      
       // List of all possible vertices with distances
       std::vector<Seek> net_seeks;
-      for(uint32_t a=0;a<nodes.size()-1;a++){
-         for(uint32_t b=a+1;b<nodes.size();b++){
+      for(uint32_t a=0;a<nodes.size();a++){
+         for(uint32_t b=0;b<a;b++){ 
             Seek seek;
             seek.start = nodes[a];
             seek.end = nodes[b];
@@ -206,36 +203,23 @@ void Pcb::Mst(){
             net_seeks.push_back(seek);
          }
       }
-    
-      // Sort vertices in order of distance
-      std::vector<Seek> sort;
-      uint32_t stop = net_seeks.size();
-      for(uint32_t i=0;i<stop;i++){
-         uint32_t min_idx = 0;
-         uint32_t min = net_seeks[0].dist;
-         for(uint32_t j=1;j<net_seeks.size();j++){
-            if(net_seeks[j].dist < min){
-               min_idx = j;
-               min = net_seeks[j].dist;
-            }
-         }
-         sort.push_back(net_seeks[min_idx]);
-         net_seeks.erase(net_seeks.begin() + min_idx);  
-      }
-      
+ 
+      // Sort vertices in order of distance 
+      std::sort(net_seeks.begin(), net_seeks.end(), lt_dist);
+
       // Find shortest vertices that do not create a loop 
       std::vector<Seek> net_mst;
-      for(uint32_t i=0;i<sort.size();i++){ 
+      for(uint32_t i=0;i<net_seeks.size();i++){ 
          // Check for loop 
          bool loop = false; 
-         net_mst.push_back(sort[i]);
+         net_mst.push_back(net_seeks[i]);
          // Testing must consider every node a route node once 
          for (auto const n : nodes){ 
             // Create a list of nodes not visited
             std::vector<Search> searches;
-            for (auto const i : nodes){ 
+            for (auto const j : nodes){ 
                Search s;
-               s.node = i;
+               s.node = j;
                s.found = false;
                searches.push_back(s);
             }        
@@ -276,10 +260,9 @@ void Pcb::Mst(){
                      ptr = n;
                   }
                }else{
+                  back_to_root = false;
                   // Check node not already found (loop)
-                  if(tests.size() > 0){
-                     tests.erase(tests.begin() + rm);  
-                  }
+                  tests.erase(tests.begin() + rm);  
                   for(uint32_t j=0;j<searches.size();j++){
                      if((ptr == searches[j].node) && (searches[j].found == true)){ 
                         loop = true;
@@ -300,11 +283,54 @@ void Pcb::Mst(){
          }
       }
 
-      
+      uint32_t a = 0;
+      uint32_t b = 0;
+
+      for (auto const n : seeks){ 
+         if(n.net == net){
+            a++;
+            //printf("seek: (%d,%d) - (%d,%d)\n",
+            //n.start.x,
+            //n.start.y,
+            //n.end.x,
+               //n.end.y
+            //);
+         }
+      }  
+      for (auto const n : net_seeks){ 
+            if(n.net == net){
+               //printf("net_seek: (%d,%d) - (%d,%d)  [%d]\n",
+               //   n.start.x,
+               //   n.start.y,
+               //   n.end.x,
+               //   n.end.y,
+               //   n.dist
+               //);
+            }
+         }
+
+
+      for (auto const n : net_mst){ 
+         if(n.net == net){
+            b++;
+            //printf("net_mst: (%d,%d) - (%d,%d)\n",
+            //n.start.x,
+            //n.start.y,
+            //n.end.x,
+            //n.end.y
+            //);
+         }
+      }
+
+      if(a != b){
+         printf("fail\n");
+      }
+
       for (auto const seek : net_mst){  
          mst.push_back(seek); 
       }
    }
+   seeks.clear(); 
    seeks = mst;
 }
 

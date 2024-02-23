@@ -38,13 +38,11 @@ Place::Place(Schematic s, uint32_t extra_decap){
    }
 }
 
-void Place::Randomise(float pairs){   
+void Place::Randomise(uint32_t pairs){   
    
    swap_a.clear();
-   swap_b.clear();
-   
-   uint32_t swaps = (uint32_t)(pairs * ((sqr*sqr)/2)); 
-   for(uint32_t i=0;i<swaps;i++){   
+   swap_b.clear(); 
+   for(uint32_t i=0;i<pairs;i++){   
       swap_a.push_back(rand() % places.size()); 
       swap_b.push_back(rand() % places.size()); 
       Coord temp = places[swap_a[i]].pos;

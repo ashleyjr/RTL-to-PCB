@@ -85,20 +85,33 @@ std::vector<Cell> Schematic::GetCells(void){
    return cells;
 }
 
+bool lt (uint32_t i, uint32_t j) { return (i<j); }
+
 std::vector<uint32_t> Schematic::GetNets(void){
    std::vector<uint32_t> nets;
-   for (auto const& c : cells){
-      if(std::find(nets.begin(), nets.end(), c.net_a_d) == nets.end()){ 
-         nets.push_back(c.net_a_d);
+   for (auto const& c : cells) { 
+      bool found = false;
+      for (auto const& n : nets) {   
+         if(n == c.net_a_d) found = true;
       }
-      if(std::find(nets.begin(), nets.end(), c.net_b_c) == nets.end()){
-         nets.push_back(c.net_b_c);
+      if(!found) nets.push_back(c.net_a_d); 
+      found = false;
+      for (auto const& n : nets) {   
+         if(n == c.net_b_c) found = true;
       }
-      if(std::find(nets.begin(), nets.end(), c.net_y_q) == nets.end()){
-         nets.push_back(c.net_y_q);
+      if(!found) nets.push_back(c.net_b_c);
+      found = false;
+      for (auto const& n : nets) {   
+         if(n == c.net_y_q) found = true;
       }
+      if(!found) nets.push_back(c.net_y_q); 
    }
+   std::sort(nets.begin(), nets.end(), lt);
    return nets;
+}
+
+uint32_t Schematic::GetNumNets(void){
+   return GetNets().size();
 }
 
 

@@ -23,7 +23,8 @@ class Schematic{
       Schematic(std::string path);
       void Print(void);
       std::vector<Cell> GetCells(void);
-      std::vector<uint32_t> GetNets(void); 
+      std::vector<uint32_t> GetNets(void);
+      uint32_t GetNumNets(void);    
    private:
       std::vector<Cell> cells;
 };

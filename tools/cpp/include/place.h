@@ -16,7 +16,7 @@ typedef struct Placed {
 class Place{
    public:
       Place(Schematic s, uint32_t extra_decap);
-      void Randomise(float pairs);
+      void Randomise(uint32_t pairs);
       void UndoRandomise(void);
       uint8_t GetSize(void);
       const std::vector<Coord> GetNonDecap(void);
