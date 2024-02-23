@@ -62,9 +62,9 @@ class Pcb{
       void Ripup(uint32_t const net);
       bool KoFree(Path const p);
       bool CopperOk(Path const p, int32_t net);
-      bool In(Path const f, std::vector<Path> const l); 
-      
+      bool In(Path const f, std::vector<Path> const l);  
       void Mst(void);
+      void ResetCopper(void);
       Schematic * schematic;
       Place * places;
       std::vector<Seek> seeks;

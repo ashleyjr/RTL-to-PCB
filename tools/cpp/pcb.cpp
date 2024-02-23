@@ -28,12 +28,11 @@ Pcb::~Pcb(void){
 }
   
 void Pcb::Init(){
-   // Init layers
+   seeks.clear();
+   ResetCopper();
+   // Init Keepout
    for(uint32_t x=0;x<size;x++){
-      for(uint32_t y=0;y<size;y++){
-         top[x][y] = -1;
-         via[x][y] = -1;
-         bot[x][y] = -1;
+      for(uint32_t y=0;y<size;y++){ 
          top_ko[x][y] = -1; 
          bot_ko[x][y] = -1;
       }
@@ -68,6 +67,26 @@ void Pcb::Init(){
          seeks.push_back(s); 
       }
    }
+   // Min Spanning Tree
+   Mst();
+   // Sort the seek distances
+   std::vector<Seek> temp;
+   uint32_t stop = seeks.size();
+   for(uint32_t i=0;i<stop;i++){
+      uint32_t min_idx = 0;
+      uint32_t min = Manhattan(seeks[0].start,seeks[0].end);
+      for(uint32_t j=1;j<seeks.size();j++){
+         if(Manhattan(seeks[j].start,seeks[j].end) < min){
+            min_idx = j;
+            min = Manhattan(seeks[j].start,seeks[j].end);
+         }
+      }
+      temp.push_back(seeks[min_idx]);
+      seeks.erase(seeks.begin() + min_idx);
+   }
+   seeks = temp;
+
+
    // Reserve start/ends
    for(auto const& seek  : seeks){
       bot[seek.start.x][seek.start.y] = seek.net;
@@ -96,54 +115,48 @@ void Pcb::Init(){
       }
    }
 }
+
+
+void Pcb::ResetCopper(void){  
+   for(uint32_t x=0;x<size;x++){
+      for(uint32_t y=0;y<size;y++){
+         top[x][y] = -1;
+         via[x][y] = -1;
+         bot[x][y] = -1;
+      }
+   }
+}
+
 void Pcb::Route(Place * p){   
    places = p;
    seeks.clear(); 
-   size = (places->GetSize() * PCB_SCALE); 
-   Init();  
-   Mst();
-   // Sort the seek distances
-   std::vector<Seek> temp;
-   uint32_t stop = seeks.size();
-   for(uint32_t i=0;i<stop;i++){
-      uint32_t min_idx = 0;
-      uint32_t min = Manhattan(seeks[0].start,seeks[0].end);
-      for(uint32_t j=1;j<seeks.size();j++){
-         if(Manhattan(seeks[j].start,seeks[j].end) < min){
-            min_idx = j;
-            min = Manhattan(seeks[j].start,seeks[j].end);
-         }
-      }
-      temp.push_back(seeks[min_idx]);
-      seeks.erase(seeks.begin() + min_idx);
-   }
-   seeks = temp;
-
-   
+   size = (places->GetSize() * PCB_SCALE);      
+   Init();
    // Route
    // - If a path cannot be routed, try them all again but pu hard one first
-   //bool done = false;
-   //while(!done){
-   //   done = true;
-      oks.clear();
+   bool done = false;
+   for(uint32_t t=0;t<100;t++){
+      done = true;
+      oks.clear(); 
+      ResetCopper();
       for(uint32_t i=0;i<seeks.size();i++){
          bool ok;
          ok = AddTrace(seeks[i].start,seeks[i].end,seeks[i].net);
          oks.push_back(ok);
-         //if(!ok){
-         //   Seek hard;
-         //   hard = seeks[i];
-         //   seeks.erase(seeks.begin() + i);
-         //   seeks.insert(seeks.begin(), hard); 
-         //   done = false;
-         //   printf("nets=(%d/%d)\n",NumRouted(),NumNets());
-         //   oks.clear();
-         //   printf("%d\n",i);
-         //   Init();
-         //   break;
-         //}
+         if(!ok){
+            Seek hard;
+            hard = seeks[i];
+            seeks.erase(seeks.begin() + i);
+            seeks.insert(seeks.begin(), hard); 
+            done = false;
+            oks.clear();
+            break;
+         }
       }
-   //}
+      if(done){
+         break;
+      }
+   }
 }
 
 bool Pcb::KoFree(Path const p){
@@ -289,43 +302,36 @@ void Pcb::Mst(){
       for (auto const n : seeks){ 
          if(n.net == net){
             a++;
-            //printf("seek: (%d,%d) - (%d,%d)\n",
-            //n.start.x,
-            //n.start.y,
-            //n.end.x,
-               //n.end.y
-            //);
          }
-      }  
-      for (auto const n : net_seeks){ 
-            if(n.net == net){
-               //printf("net_seek: (%d,%d) - (%d,%d)  [%d]\n",
-               //   n.start.x,
-               //   n.start.y,
-               //   n.end.x,
-               //   n.end.y,
-               //   n.dist
-               //);
-            }
-         }
-
-
+      }
       for (auto const n : net_mst){ 
          if(n.net == net){
             b++;
-            //printf("net_mst: (%d,%d) - (%d,%d)\n",
-            //n.start.x,
-            //n.start.y,
-            //n.end.x,
-            //n.end.y
-            //);
          }
       }
-
-      if(a != b){
-         printf("fail\n");
-      }
-
+      //if(a != b){
+      //   printf("fail\n");
+      //   for (auto const n : seeks){ 
+      //      if(n.net == net){ 
+      //         printf("seek: (%d,%d) - (%d,%d)\n",
+      //            n.start.x,
+      //            n.start.y,
+      //            n.end.x,
+      //            n.end.y
+      //         );
+      //      }
+      //   }
+      //   for (auto const n : net_mst){ 
+      //      if(n.net == net){ 
+      //         printf("net_mst: (%d,%d) - (%d,%d)\n",
+      //            n.start.x,
+      //            n.start.y,
+      //            n.end.x,
+      //            n.end.y
+      //         );
+      //      }
+      //   }
+      //} 
       for (auto const seek : net_mst){  
          mst.push_back(seek); 
       }
